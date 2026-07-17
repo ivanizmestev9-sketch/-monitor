@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>KreZzMonitor — мониторинг серверов Minecraft</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"/>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <style>
+        /* ============================================================
+           CSS-ПЕРЕМЕННЫЕ (темы)
+           ============================================================ */
+        :root {
+            --bg-body: #0b0d12;
+            --bg-navbar: rgba(16, 19, 28, 0.85);
+            --bg-card: rgba(22, 26, 38, 0.75);
+            --bg-card-hover: rgba(30, 35, 50, 0.85);
+            --bg-filter: rgba(255, 255, 255, 0.03);
+            --bg-input: rgba(255, 255, 255, 0.04);
+            --bg-tag: rgba(167, 139, 250, 0.12);
+            --text-primary: #eef2f6;
+            --text-secondary: rgba(255, 255, 255, 0.55);
+            --text-muted: rgba(255, 255, 255, 0.25);
+            --border-color: rgba(255, 255, 255, 0.05);
+            --border-light: rgba(255, 255, 255, 0.06);
+            --shadow-color: rgba(0, 0, 0, 0.5);
+            --gradient-start: #7c3aed;
+            --gradient-end: #34d399;
+            --tag-color: #c4b5fd;
+            --ip-bg: rgba(255, 255, 255, 0.04);
+            --ip-hover: rgba(255, 255, 255, 0.08);
+            --vote-color: #eef2f6;
+            --arrow-color: rgba(255, 255, 255, 0.25);
+            --arrow-hover: #34d399;
+            --status-dot-on: #34d399;
+            --status-dot-off: #f87171;
+            --btn-outline-border: rgba(255, 255, 255, 0.12);
+            --btn-outline-hover: rgba(255, 255, 255, 0.06);
+            --danger-color: #ef4444;
+            --success-color: #10b981;
+            --avatar-bg: #1e2335;
+            --placeholder-color: rgba(255, 255, 255, 0.15);
+        }
+        body.light-theme {
+            --bg-body: #f0f2f5;
+            --bg-navbar: rgba(255, 255, 255, 0.9);
+            --bg-card: rgba(255, 255, 255, 0.85);
+            --bg-card-hover: rgba(255, 255, 255, 0.95);
+            --bg-filter: rgba(0, 0, 0, 0.03);
+            --bg-input: rgba(0, 0, 0, 0.04);
+            --bg-tag: rgba(124, 58, 237, 0.08);
+            --text-primary: #1a1a2e;
+            --text-secondary: rgba(0, 0, 0, 0.6);
+            --text-muted: rgba(0, 0, 0, 0.3);
+            --border-color: rgba(0, 0, 0, 0.08);
+            --border-light: rgba(0, 0, 0, 0.06);
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --gradient-start: #6d28d9;
+            --gradient-end: #059669;
+            --tag-color: #5b21b6;
+            --ip-bg: rgba(0, 0, 0, 0.04);
+            --ip-hover: rgba(0, 0, 0, 0.08);
+            --vote-color: #1a1a2e;
+            --arrow-color: rgba(0, 0, 0, 0.25);
+            --arrow-hover: #059669;
+            --status-dot-on: #10b981;
+            --status-dot-off: #ef4444;
+            --btn-outline-border: rgba(0, 0, 0, 0.12);
+            --btn-outline-hover: rgba(0, 0, 0, 0.06);
+            --danger-color: #dc2626;
+            --success-color: #059669;
+            --avatar-bg: #e2e8f0;
+            --placeholder-color: rgba(0, 0, 0, 0.1);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg-body);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 0 0 40px;
+            transition: background 0.3s, color 0.3s;
+        }
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        .navbar {
+            background: var(--bg-navbar);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 14px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            transition: background 0.3s;
+        }
+        .navbar .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .logo {
+            font-size: 26px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #a78bfa, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
+        }
+        .logo i {
+            -webkit-text-fill-color: initial;
+            color: #a78bfa;
+            margin-right: 6px;
+        }
+        .auth-buttons {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .btn {
+            padding: 9px 22px;
+            border: none;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.25s;
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--btn-outline-border);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #7c3aed, #6d28d9);
+            border: none;
+            box-shadow: 0 4px 16px rgba(124, 58, 237, 0.3);
+            color: #fff;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 28px rgba(124, 58, 237, 0.45);
+        }
+        .btn-outline {
+            border: 1px solid var(--btn-outline-border);
+        }
+        .btn-outline:hover {
+            background: var(--btn-outline-hover);
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+            color: #fff;
+        }
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 28px rgba(16, 185, 129, 0.45);
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            border: none;
+            color: white;
+        }
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 28px rgba(239, 68, 68, 0.4);
+        }
+        .btn-sm {
+            padding: 6px 14px;
+            font-size: 12px;
+        }
+        .btn-back {
+            background: var(--bg-input);
+            border: 1px solid var(--border-light);
+            color: var(--text-primary);
+        }
+        .btn-back:hover {
+            background: var(--ip-hover);
+        }
+        .btn-theme {
+            padding: 8px 12px;
+            font-size: 18px;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-input);
+            border: 1px solid var(--border-light);
+            color: var(--text-primary);
+            transition: 0.2s;
+        }
+        .btn-theme:hover {
+            background: var(--ip-hover);
+            transform: scale(1.05);
+        }
+        .hero {
+            text-align: center;
+            padding: 60px 0 48px;
+        }
+        .hero h1 {
+            font-size: 48px;
+            font-weight: 800;
+            line-height: 1.2;
+            background: linear-gradient(135deg, #e2e8f0 0%, #a78bfa 60%, #34d399 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero p {
+            font-size: 18px;
+            color: var(--text-secondary);
+            max-width: 640px;
+            margin: 16px auto 32px;
+        }
+        .page {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        .page.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .add-form-page {
+            max-width: 720px;
+            margin: 0 auto 40px;
+            background: var(--bg-card);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 30px 32px;
+            transition: background 0.3s, border 0.3s;
+        }
+        .add-form-page h2 {
+            font-size: 22px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .add-form-page .form-group {
+            margin-bottom: 16px;
+        }
+        .add-form-page .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+        .add-form-page .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .add-form-page input,
+        .add-form-page select,
+        .add-form-page textarea {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: var(--text-primary);
+            font-size: 14px;
+            outline: none;
+            transition: border 0.2s, background 0.3s;
+            font-family: inherit;
+        }
+        .add-form-page select option {
+            background: var(--bg-body);
+            color: var(--text-primary);
+        }
+        .add-form-page textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        .add-form-page input::placeholder,
+        .add-form-page textarea::placeholder {
+            color: var(--text-muted);
+        }
+        .add-form-page input:focus,
+        .add-form-page select:focus,
+        .add-form-page textarea:focus {
+            border-color: #7c3aed;
+        }
+        .add-form-page .tags-input-wrap {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .add-form-page .tags-input-wrap input {
+            flex: 1;
+            min-width: 150px;
+        }
+        .add-form-page .tag-item {
+            background: var(--bg-tag);
+            border: 1px solid rgba(167, 139, 250, 0.15);
+            padding: 4px 12px 4px 14px;
+            border-radius: 40px;
+            font-size: 13px;
+            color: var(--tag-color);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .add-form-page .tag-item .remove-tag {
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 12px;
+            transition: color 0.2s;
+        }
+        .add-form-page .tag-item .remove-tag:hover {
+            color: var(--danger-color);
+        }
+        .add-form-page .avatar-upload {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .add-form-page .avatar-preview {
+            width: 80px;
+            height: 80px;
+            border-radius: 16px;
+            background: var(--bg-input);
+            border: 2px dashed var(--border-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: var(--text-muted);
+            overflow: hidden;
+            flex-shrink: 0;
+            position: relative;
+        }
+        .add-form-page .avatar-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .add-form-page .avatar-preview .placeholder {
+            font-size: 32px;
+            color: var(--text-muted);
+        }
+        .add-form-page .avatar-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .add-form-page .avatar-actions .file-input-wrap {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+        .add-form-page .avatar-actions .file-input-wrap input[type="file"] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        .add-form-page .avatar-actions .file-name {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        .add-form-page .form-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 8px;
+        }
+        .filters-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 14px 18px;
+            background: var(--bg-filter);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border-color);
+            border-radius: 60px;
+            padding: 12px 24px;
+            margin-bottom: 40px;
+            transition: background 0.3s, border 0.3s;
+        }
+        .filters-bar .search-wrap {
+            flex: 1 1 220px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--bg-input);
+            border-radius: 40px;
+            padding: 4px 16px 4px 18px;
+            border: 1px solid var(--border-light);
+            transition: background 0.3s;
+        }
+        .filters-bar .search-wrap i {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+        .filters-bar .search-wrap input {
+            background: transparent;
+            border: none;
+            padding: 10px 0;
+            width: 100%;
+            color: var(--text-primary);
+            font-size: 14px;
+            outline: none;
+        }
+        .filters-bar .search-wrap input::placeholder {
+            color: var(--text-muted);
+        }
+        .filter-select {
+            background: var(--bg-input);
+            border: 1px solid var(--border-light);
+            border-radius: 40px;
+            padding: 10px 18px;
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+            outline: none;
+            min-width: 130px;
+            transition: background 0.3s, border 0.3s;
+        }
+        .filter-select option {
+            background: var(--bg-body);
+            color: var(--text-primary);
+        }
+        .filter-select:focus {
+            border-color: #7c3aed;
+        }
+        .filters-reset {
+            color: var(--text-muted);
+            font-size: 13px;
+            cursor: pointer;
+            transition: color 0.2s;
+            margin-left: auto;
+        }
+        .filters-reset:hover {
+            color: var(--danger-color);
+        }
+        .servers-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            margin-top: 8px;
+        }
+        .server-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 22px 22px 20px;
+            transition: all 0.3s ease;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+        .server-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(167, 139, 250, 0.2);
+            box-shadow: 0 16px 48px var(--shadow-color);
+            background: var(--bg-card-hover);
+        }
+        .server-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 20px;
+            right: 20px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #a78bfa, #34d399, transparent);
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+        .server-card:hover::before {
+            opacity: 1;
+        }
+        .card-top {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            margin-bottom: 12px;
+        }
+        .vote-block {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: var(--bg-input);
+            padding: 4px 8px;
+            border-radius: 16px;
+            min-width: 42px;
+        }
+        .vote-block .vote-arrow {
+            color: var(--arrow-color);
+            font-size: 18px;
+            cursor: pointer;
+            transition: color 0.2s, transform 0.2s;
+            line-height: 1;
+        }
+        .vote-block .vote-arrow:hover {
+            color: var(--arrow-hover);
+            transform: scale(1.15);
+        }
+        .vote-block .vote-count {
+            font-weight: 700;
+            font-size: 17px;
+            color: var(--vote-color);
+            margin: 2px 0;
+        }
+        .server-avatar {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            background: var(--avatar-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            color: #a78bfa;
+            flex-shrink: 0;
+            overflow: hidden;
+            border: 1px solid var(--border-light);
+            transition: background 0.3s;
+        }
+        .server-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .server-title {
+            flex: 1;
+            min-width: 0;
+        }
+        .server-title h3 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            word-break: break-word;
+        }
+        .server-title .server-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 4px;
+        }
+        .server-title .server-tags span {
+            background: var(--bg-tag);
+            border: 1px solid rgba(167, 139, 250, 0.12);
+            padding: 2px 12px;
+            border-radius: 40px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--tag-color);
+            letter-spacing: 0.3px;
+        }
+        .card-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin: 10px 0 14px;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .online-bar-wrap {
+            background: var(--bg-input);
+            border-radius: 40px;
+            height: 6px;
+            overflow: hidden;
+            margin: 6px 0 10px;
+        }
+        .online-bar-fill {
+            height: 100%;
+            border-radius: 40px;
+            background: linear-gradient(90deg, #7c3aed, #34d399);
+            width: 75%;
+            transition: width 0.6s ease;
+        }
+        .online-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .online-info strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        .card-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 16px;
+            padding-top: 14px;
+            border-top: 1px solid var(--border-color);
+        }
+        .card-actions .ip-copy {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--ip-bg);
+            padding: 6px 16px 6px 14px;
+            border-radius: 40px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+            border: 1px solid var(--border-light);
+        }
+        .card-actions .ip-copy:hover {
+            background: var(--ip-hover);
+            color: var(--text-primary);
+        }
+        .card-actions .ip-copy i {
+            color: #34d399;
+        }
+        .card-actions .server-status {
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--status-dot-on);
+            box-shadow: 0 0 12px rgba(52, 211, 153, 0.3);
+        }
+        .status-dot.offline {
+            background: var(--status-dot-off);
+            box-shadow: 0 0 12px rgba(248, 113, 113, 0.2);
+        }
+        .server-card .delete-btn {
+            margin-top: 8px;
+            padding: 4px 14px;
+            font-size: 12px;
+            width: 100%;
+        }
+        .no-results {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+            font-size: 18px;
+        }
+        .no-results i {
+            font-size: 48px;
+            display: block;
+            margin-bottom: 16px;
+            color: var(--text-muted);
+        }
+        .server-count {
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 400;
+            margin-left: 10px;
+        }
+        @media (max-width: 900px) {
+            .add-form-page .form-row {
+                grid-template-columns: 1fr;
+            }
+            .filters-bar {
+                border-radius: 32px;
+                padding: 16px 20px;
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .filters-bar .search-wrap {
+                flex: 1 1 auto;
+            }
+            .filters-reset {
+                margin-left: 0;
+                text-align: right;
+            }
+            .hero h1 {
+                font-size: 34px;
+            }
+            .servers-grid {
+                gap: 16px;
+            }
+            .add-form-page .avatar-upload {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+        @media (max-width: 480px) {
+            .container {
+                padding: 0 16px;
+            }
+            .hero h1 {
+                font-size: 28px;
+            }
+            .server-card {
+                padding: 18px 16px;
+            }
+            .card-top {
+                flex-wrap: wrap;
+            }
+            .navbar .container {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            .auth-buttons .btn {
+                padding: 7px 14px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="navbar">
+        <div class="container">
+            <div class="logo" onclick="showPage('main')" style="cursor:pointer;">
+                <i class="fas fa-cube"></i> KreZzMonitor
+            </div>
+            <div class="auth-buttons">
+                <button class="btn btn-theme" id="themeToggle" title="Переключить тему">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <button class="btn btn-success" onclick="showPage('add')"><i class="fas fa-plus-circle"></i> Добавить</button>
+                <button class="btn btn-outline"><i class="fas fa-sign-in-alt"></i> Войти</button>
+                <button class="btn btn-primary"><i class="fas fa-user-plus"></i> Регистрация</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- СТРАНИЦА 1: ГЛАВНАЯ -->
+        <div class="page active" id="page-main">
+            <section class="hero">
+                <h1>Найди свой идеальный сервер</h1>
+                <p>Тысячи серверов Minecraft в одном месте. Голосуй, добавляй, играй.</p>
+                <button class="btn btn-success" onclick="showPage('add')">
+                    <i class="fas fa-plus-circle"></i> Добавить свой сервер
+                </button>
+            </section>
+
+            <div class="filters-bar">
+                <div class="search-wrap">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Поиск по названию..." />
+                </div>
+                <select class="filter-select" id="versionFilter">
+                    <option value="all">Все версии</option>
+                </select>
+                <select class="filter-select" id="sortFilter">
+                    <option value="online">Сначала онлайн</option>
+                    <option value="players">По игрокам</option>
+                    <option value="votes">По голосам</option>
+                    <option value="newest">Сначала новые</option>
+                </select>
+                <span class="filters-reset" id="resetFilters"><i class="fas fa-undo-alt"></i> Сбросить</span>
+            </div>
+
+            <div id="serversContainer">
+                <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                    📡 Все серверы
+                    <span class="server-count" id="serverCount">(0)</span>
+                </h2>
+                <div class="servers-grid" id="serversGrid">
+                    <div class="no-results"><i class="fas fa-server"></i> Загрузка...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- СТРАНИЦА 2: ДОБАВЛЕНИЕ -->
+        <div class="page" id="page-add">
+            <div style="margin-top: 20px;">
+                <button class="btn btn-back" onclick="showPage('main')">
+                    <i class="fas fa-arrow-left"></i> Назад
+                </button>
+            </div>
+
+            <div class="add-form-page">
+                <h2><i class="fas fa-server" style="color: #a78bfa;"></i> Добавить сервер</h2>
+
+                <div class="form-group">
+                    <label>Название сервера *</label>
+                    <input type="text" id="serverName" placeholder="Например: Hypixel" />
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>IP адрес *</label>
+                        <input type="text" id="serverIP" placeholder="mc.hypixel.net" />
+                    </div>
+                    <div class="form-group">
+                        <label>Порт (необязательно)</label>
+                        <input type="number" id="serverPort" placeholder="25565 (по умолчанию)" value="25565" />
+                    </div>
+                </div>
+
+                <!-- ====== ЗАМЕНА: поле версии теперь SELECT ====== -->
+                <div class="form-group">
+                    <label>Версия Minecraft *</label>
+                    <select id="serverVersion">
+                        <option value="1.21">1.21</option>
+                        <option value="1.20.6">1.20.6</option>
+                        <option value="1.20.4">1.20.4</option>
+                        <option value="1.20.2">1.20.2</option>
+                        <option value="1.20.1">1.20.1</option>
+                        <option value="1.20">1.20</option>
+                        <option value="1.19.4">1.19.4</option>
+                        <option value="1.19.3">1.19.3</option>
+                        <option value="1.19.2">1.19.2</option>
+                        <option value="1.19">1.19</option>
+                        <option value="1.18.2">1.18.2</option>
+                        <option value="1.18.1">1.18.1</option>
+                        <option value="1.18">1.18</option>
+                        <option value="1.17.1">1.17.1</option>
+                        <option value="1.17">1.17</option>
+                        <option value="1.16.5">1.16.5</option>
+                        <option value="1.16.4">1.16.4</option>
+                        <option value="1.16.3">1.16.3</option>
+                        <option value="1.16.2">1.16.2</option>
+                        <option value="1.16.1">1.16.1</option>
+                        <option value="1.16">1.16</option>
+                        <option value="1.15.2">1.15.2</option>
+                        <option value="1.15.1">1.15.1</option>
+                        <option value="1.15">1.15</option>
+                        <option value="1.14.4">1.14.4</option>
+                        <option value="1.14.3">1.14.3</option>
+                        <option value="1.14.2">1.14.2</option>
+                        <option value="1.14.1">1.14.1</option>
+                        <option value="1.14">1.14</option>
+                        <option value="1.13.2">1.13.2</option>
+                        <option value="1.13.1">1.13.1</option>
+                        <option value="1.13">1.13</option>
+                        <option value="1.12.2">1.12.2</option>
+                        <option value="1.12.1">1.12.1</option>
+                        <option value="1.12">1.12</option>
+                        <option value="1.11.2">1.11.2</option>
+                        <option value="1.11.1">1.11.1</option>
+                        <option value="1.11">1.11</option>
+                        <option value="1.10.2">1.10.2</option>
+                        <option value="1.10.1">1.10.1</option>
+                        <option value="1.10">1.10</option>
+                        <option value="1.9.4">1.9.4</option>
+                        <option value="1.9.3">1.9.3</option>
+                        <option value="1.9.2">1.9.2</option>
+                        <option value="1.9.1">1.9.1</option>
+                        <option value="1.9">1.9</option>
+                        <option value="1.8.9">1.8.9</option>
+                        <option value="1.8.8">1.8.8</option>
+                        <option value="1.8.7">1.8.7</option>
+                        <option value="1.8.6">1.8.6</option>
+                        <option value="1.8.5">1.8.5</option>
+                        <option value="1.8.4">1.8.4</option>
+                        <option value="1.8.3">1.8.3</option>
+                        <option value="1.8.2">1.8.2</option>
+                        <option value="1.8.1">1.8.1</option>
+                        <option value="1.8">1.8</option>
+                        <option value="custom">Другая (введите вручную)</option>
+                    </select>
+                    <!-- Дополнительное поле для кастомной версии (изначально скрыто) -->
+                    <input type="text" id="serverVersionCustom" placeholder="Введите версию вручную" style="margin-top:8px; display:none;" />
+                </div>
+
+                <div class="form-group">
+                    <label>Описание</label>
+                    <textarea id="serverDescription" placeholder="Расскажите о своём сервере..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Теги (нажмите Enter после каждого тега)</label>
+                    <div class="tags-input-wrap">
+                        <input type="text" id="tagInput" placeholder="Например: PvP, SkyBlock, Выживание" />
+                        <button class="btn btn-outline btn-sm" id="addTagBtn">+ Добавить</button>
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;" id="tagsContainer"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Аватарка (загрузите с ПК)</label>
+                    <div class="avatar-upload">
+                        <div class="avatar-preview" id="avatarPreview">
+                            <span class="placeholder"><i class="fas fa-image"></i></span>
+                        </div>
+                        <div class="avatar-actions">
+                            <div class="file-input-wrap">
+                                <button class="btn btn-outline btn-sm"><i class="fas fa-upload"></i> Выбрать файл</button>
+                                <input type="file" id="avatarFileInput" accept="image/*" />
+                            </div>
+                            <span class="file-name" id="avatarFileName">Файл не выбран</span>
+                            <button class="btn btn-outline btn-sm" style="color: var(--danger-color); border-color: rgba(248,113,113,0.2);" id="clearAvatarBtn">
+                                <i class="fas fa-times"></i> Удалить
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn btn-success" id="submitServerBtn"><i class="fas fa-check"></i> Добавить</button>
+                    <button class="btn btn-outline" onclick="showPage('main')">Отмена</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // ============================================================
+        //  КОНФИГ FIREBASE
+        // ============================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyDhdICxEq951HtNtw2XUbJmPya8rcVDGHA",
+            authDomain: "reherherherh.firebaseapp.com",
+            projectId: "reherherherh",
+            storageBucket: "reherherherh.firebasestorage.app",
+            messagingSenderId: "381661685916",
+            appId: "1:381661685916:web:8bcec48785a4da3f8a6559",
+            measurementId: "G-8CX69LHMKE"
+        };
+
+        console.log('🔥 Инициализация Firebase...');
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        console.log('✅ Firebase инициализирован');
+
+        // ============================================================
+        //  ПЕРЕКЛЮЧЕНИЕ СТРАНИЦ
+        // ============================================================
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById('page-' + pageId).classList.add('active');
+            if (pageId === 'main') {
+                applyFiltersAndRender();
+            }
+        }
+
+        // ============================================================
+        //  ТЕМА
+        // ============================================================
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = themeToggle.querySelector('i');
+
+        function setTheme(theme) {
+            if (theme === 'light') {
+                document.body.classList.add('light-theme');
+                themeIcon.className = 'fas fa-sun';
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.body.classList.remove('light-theme');
+                themeIcon.className = 'fas fa-moon';
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        setTheme(savedTheme);
+        themeToggle.addEventListener('click', () => {
+            const isLight = document.body.classList.contains('light-theme');
+            setTheme(isLight ? 'dark' : 'light');
+        });
+
+        // ============================================================
+        //  ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+        // ============================================================
+        let servers = [];
+        let tags = [];
+        let unsubscribe = null;
+        let avatarDataURL = null;
+
+        const serversGrid = document.getElementById('serversGrid');
+        const serverCountSpan = document.getElementById('serverCount');
+
+        const serverName = document.getElementById('serverName');
+        const serverIP = document.getElementById('serverIP');
+        const serverPort = document.getElementById('serverPort');
+        const serverVersionSelect = document.getElementById('serverVersion');
+        const serverVersionCustom = document.getElementById('serverVersionCustom');
+        const serverDescription = document.getElementById('serverDescription');
+        const tagInput = document.getElementById('tagInput');
+        const addTagBtn = document.getElementById('addTagBtn');
+        const tagsContainer = document.getElementById('tagsContainer');
+        const avatarFileInput = document.getElementById('avatarFileInput');
+        const avatarFileName = document.getElementById('avatarFileName');
+        const avatarPreview = document.getElementById('avatarPreview');
+        const clearAvatarBtn = document.getElementById('clearAvatarBtn');
+        const submitBtn = document.getElementById('submitServerBtn');
+
+        const searchInput = document.getElementById('searchInput');
+        const versionFilterSelect = document.getElementById('versionFilter');
+        const sortFilterSelect = document.getElementById('sortFilter');
+        const resetFiltersBtn = document.getElementById('resetFilters');
+
+        // ============================================================
+        //  ЛОГИКА ПОЛЯ ВЕРСИИ (показ/скрытие кастомного ввода)
+        // ============================================================
+        serverVersionSelect.addEventListener('change', function() {
+            if (this.value === 'custom') {
+                serverVersionCustom.style.display = 'block';
+                serverVersionCustom.required = true;
+            } else {
+                serverVersionCustom.style.display = 'none';
+                serverVersionCustom.required = false;
+                serverVersionCustom.value = '';
+            }
+        });
+
+        // ============================================================
+        //  ТЕГИ
+        // ============================================================
+        function renderTags() {
+            tagsContainer.innerHTML = tags.map(tag =>
+                `<span class="tag-item">
+                    ${tag}
+                    <span class="remove-tag" data-tag="${tag}"><i class="fas fa-times"></i></span>
+                </span>`
+            ).join('');
+            document.querySelectorAll('#tagsContainer .remove-tag').forEach(el => {
+                el.addEventListener('click', function() {
+                    const tag = this.dataset.tag;
+                    tags = tags.filter(t => t !== tag);
+                    renderTags();
+                });
+            });
+        }
+
+        addTagBtn.addEventListener('click', function() {
+            const val = tagInput.value.trim();
+            if (val && !tags.includes(val)) {
+                tags.push(val);
+                renderTags();
+                tagInput.value = '';
+            }
+        });
+
+        tagInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addTagBtn.click();
+            }
+        });
+
+        // ============================================================
+        //  АВАТАР
+        // ============================================================
+        function resizeAndConvertToBase64(file, maxWidth = 200, maxHeight = 200) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        let width = img.width;
+                        let height = img.height;
+                        if (width > maxWidth || height > maxHeight) {
+                            const ratio = Math.min(maxWidth / width, maxHeight / height);
+                            width = Math.round(width * ratio);
+                            height = Math.round(height * ratio);
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                        resolve(dataUrl);
+                    };
+                    img.onerror = reject;
+                    img.src = e.target.result;
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        avatarFileInput.addEventListener('change', async function() {
+            const file = this.files[0];
+            if (!file) return;
+            avatarFileName.textContent = file.name;
+            try {
+                const dataUrl = await resizeAndConvertToBase64(file);
+                avatarDataURL = dataUrl;
+                avatarPreview.innerHTML = `<img src="${dataUrl}" alt="avatar" />`;
+            } catch (e) {
+                console.error('Ошибка обработки картинки:', e);
+                alert('Не удалось обработать файл');
+            }
+        });
+
+        clearAvatarBtn.addEventListener('click', function() {
+            avatarFileInput.value = '';
+            avatarFileName.textContent = 'Файл не выбран';
+            avatarDataURL = null;
+            avatarPreview.innerHTML = `<span class="placeholder"><i class="fas fa-image"></i></span>`;
+        });
+
+        // ============================================================
+        //  ПОЛУЧЕНИЕ СТАТУСА СЕРВЕРА (API)
+        // ============================================================
+        async function fetchServerStatus(address, port) {
+            const url = `https://api.mcsrvstat.us/3/${address}:${port}`;
+            try {
+                const response = await fetch(url);
+                if (!response.ok) return null;
+                return await response.json();
+            } catch (e) {
+                console.warn(`⚠️ Ошибка API для ${address}:`, e);
+                return null;
+            }
+        }
+
+        // ============================================================
+        //  ОТПРАВКА ФОРМЫ С ПРОВЕРКОЙ СТАТУСА
+        // ============================================================
+        async function addServerToFirestore() {
+            const name = serverName.value.trim();
+            const ip = serverIP.value.trim();
+            const port = parseInt(serverPort.value) || 25565;
+
+            // Получаем версию
+            let version = serverVersionSelect.value;
+            if (version === 'custom') {
+                version = serverVersionCustom.value.trim();
+                if (!version) {
+                    alert('Пожалуйста, введите версию вручную.');
+                    return;
+                }
+            } else if (!version) {
+                alert('Выберите версию Minecraft.');
+                return;
+            }
+
+            const description = serverDescription.value.trim();
+
+            if (!name || !ip) {
+                alert('Заполните название и IP адрес!');
+                return;
+            }
+
+            if (servers.some(s => s.address.toLowerCase() === ip.toLowerCase() && s.port === port)) {
+                alert('Сервер с таким IP и портом уже существует!');
+                return;
+            }
+
+            // --- Проверка онлайн-статуса перед добавлением ---
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Проверка...';
+            const status = await fetchServerStatus(ip, port);
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-check"></i> Добавить';
+
+            if (!status || status.online !== true) {
+                alert('❌ Сервер не найден или выключен. Убедитесь, что IP и порт указаны верно, и сервер работает.');
+                return;
+            }
+
+            // Если онлайн – продолжаем
+            const avatar = avatarDataURL || null;
+
+            const newServer = {
+                name,
+                address: ip,
+                port,
+                version,
+                description,
+                tags: tags.slice(),
+                avatarUrl: avatar,
+                votes: 0,
+                statusData: status, // сохраняем полученный статус сразу
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            try {
+                await db.collection('servers').add(newServer);
+                console.log('✅ Сервер успешно добавлен!');
+                // Очистка формы
+                serverName.value = '';
+                serverIP.value = '';
+                serverPort.value = '25565';
+                serverVersionSelect.value = '1.21';
+                serverVersionCustom.style.display = 'none';
+                serverVersionCustom.value = '';
+                serverDescription.value = '';
+                tags = [];
+                renderTags();
+                avatarFileInput.value = '';
+                avatarFileName.textContent = 'Файл не выбран';
+                avatarDataURL = null;
+                avatarPreview.innerHTML = `<span class="placeholder"><i class="fas fa-image"></i></span>`;
+                showPage('main');
+            } catch (e) {
+                console.error('❌ Ошибка добавления:', e);
+                alert('Не удалось добавить сервер: ' + e.message);
+            }
+        }
+
+        submitBtn.addEventListener('click', addServerToFirestore);
+
+        // ============================================================
+        //  ОБНОВЛЕНИЕ СТАТУСА (для уже существующих серверов)
+        // ============================================================
+        async function updateServerStatus(server) {
+            if (!server || !server.id) return;
+            const status = await fetchServerStatus(server.address, server.port);
+            try {
+                await db.collection('servers').doc(server.id).update({
+                    statusData: status
+                });
+            } catch (e) {
+                console.error(`❌ Ошибка обновления ${server.address}:`, e);
+            }
+        }
+
+        // ============================================================
+        //  ПОДПИСКА НА FIRESTORE
+        // ============================================================
+        function loadServers() {
+            if (unsubscribe) unsubscribe();
+            unsubscribe = db.collection('servers')
+                .onSnapshot(async (snapshot) => {
+                    const temp = [];
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        temp.push({
+                            id: doc.id,
+                            ...data,
+                            port: data.port || 25565,
+                            statusData: data.statusData || null,
+                            createdAt: data.createdAt || null
+                        });
+                    });
+
+                    temp.sort((a, b) => {
+                        if (a.createdAt && b.createdAt) {
+                            return b.createdAt.seconds - a.createdAt.seconds;
+                        }
+                        return 0;
+                    });
+
+                    servers = temp;
+                    serverCountSpan.textContent = `(${servers.length})`;
+
+                    // Если у сервера нет статуса – запрашиваем
+                    servers.forEach(server => {
+                        if (!server.statusData) {
+                            updateServerStatus(server);
+                        }
+                    });
+
+                    updateVersionFilter();
+                    applyFiltersAndRender();
+
+                }, (error) => {
+                    console.error('❌ Ошибка подписки Firestore:', error);
+                    serversGrid.innerHTML = `<div class="no-results"><i class="fas fa-exclamation-triangle"></i> Ошибка: ${error.message}</div>`;
+                });
+        }
+
+        // ============================================================
+        //  ФИЛЬТРЫ И ОТРИСОВКА
+        // ============================================================
+        function updateVersionFilter() {
+            const versions = new Set();
+            servers.forEach(s => {
+                if (s.version && s.version.trim()) versions.add(s.version.trim());
+            });
+            const currentVal = versionFilterSelect.value;
+            versionFilterSelect.innerHTML = `<option value="all">Все версии</option>`;
+            versions.forEach(v => {
+                const opt = document.createElement('option');
+                opt.value = v;
+                opt.textContent = v;
+                versionFilterSelect.appendChild(opt);
+            });
+            if (currentVal && versions.has(currentVal)) {
+                versionFilterSelect.value = currentVal;
+            } else {
+                versionFilterSelect.value = 'all';
+            }
+        }
+
+        function applyFiltersAndRender() {
+            const search = searchInput.value.trim().toLowerCase();
+            const version = versionFilterSelect.value;
+            const sort = sortFilterSelect.value;
+
+            let filtered = servers.filter(s => {
+                const nameMatch = s.name && s.name.toLowerCase().includes(search);
+                const versionMatch = version === 'all' || (s.version && s.version === version);
+                return nameMatch && versionMatch;
+            });
+
+            if (sort === 'online') {
+                filtered.sort((a, b) => {
+                    const aOnline = a.statusData && a.statusData.online === true;
+                    const bOnline = b.statusData && b.statusData.online === true;
+                    if (aOnline && !bOnline) return -1;
+                    if (!aOnline && bOnline) return 1;
+                    return (b.votes || 0) - (a.votes || 0);
+                });
+            } else if (sort === 'players') {
+                filtered.sort((a, b) => {
+                    const aPlayers = a.statusData && a.statusData.players ? a.statusData.players.online : 0;
+                    const bPlayers = b.statusData && b.statusData.players ? b.statusData.players.online : 0;
+                    return bPlayers - aPlayers;
+                });
+            } else if (sort === 'votes') {
+                filtered.sort((a, b) => (b.votes || 0) - (a.votes || 0));
+            } else if (sort === 'newest') {
+                filtered.sort((a, b) => {
+                    if (a.createdAt && b.createdAt) {
+                        return b.createdAt.seconds - a.createdAt.seconds;
+                    }
+                    return 0;
+                });
+            }
+
+            renderCards(filtered);
+        }
+
+        function renderCards(serversList) {
+            if (!serversList || serversList.length === 0) {
+                serversGrid.innerHTML = `<div class="no-results"><i class="fas fa-server"></i> Нет серверов</div>`;
+                return;
+            }
+
+            let html = '';
+            serversList.forEach(server => {
+                const status = server.statusData;
+                const online = status && status.online === true;
+                const playersOnline = status && status.players ? status.players.online : 0;
+                const playersMax = status && status.players ? status.players.max : 0;
+                const percent = playersMax > 0 ? Math.round((playersOnline / playersMax) * 100) : 0;
+                const versionDisplay = status && status.version ? status.version : (server.version || '—');
+                const description = server.description || 'Описание отсутствует';
+                const tags = server.tags || [];
+                const avatar = server.avatarUrl || '';
+                const votes = server.votes || 0;
+
+                const statusText = online ? 'Онлайн' : 'Офлайн';
+                const statusDotClass = online ? 'status-dot' : 'status-dot offline';
+
+                html += `
+                    <div class="server-card" data-id="${server.id}">
+                        <div class="card-top">
+                            <div class="vote-block">
+                                <span class="vote-arrow"><i class="fas fa-chevron-up"></i></span>
+                                <span class="vote-count">${votes}</span>
+                            </div>
+                            <div class="server-avatar">
+                                ${avatar ? `<img src="${avatar}" alt="avatar" />` : '🎮'}
+                            </div>
+                            <div class="server-title">
+                                <h3>${server.name || server.address}</h3>
+                                <div class="server-tags">
+                                    ${tags.map(t => `<span>${t}</span>`).join('')}
+                                    ${versionDisplay !== '—' ? `<span>${versionDisplay}</span>` : ''}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card-desc">${description}</div>
+
+                        <div class="online-bar-wrap">
+                            <div class="online-bar-fill" style="width: ${percent}%;"></div>
+                        </div>
+                        <div class="online-info">
+                            <span><strong>${playersOnline}</strong> / ${playersMax} игроков</span>
+                            <span>${percent}%</span>
+                        </div>
+
+                        <div class="card-actions">
+                            <div class="ip-copy" onclick="copyToClipboard('${server.address}:${server.port}')">
+                                <i class="fas fa-copy"></i> ${server.address}:${server.port}
+                            </div>
+                            <div class="server-status">
+                                <span class="${statusDotClass}"></span> ${statusText}
+                            </div>
+                        </div>
+                        <button class="btn btn-danger btn-sm delete-btn" onclick="deleteServer('${server.id}')">
+                            <i class="fas fa-trash"></i> Удалить
+                        </button>
+                    </div>
+                `;
+            });
+
+            serversGrid.innerHTML = html;
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                console.log('Скопировано:', text);
+            }).catch(err => console.error('Ошибка копирования:', err));
+        }
+
+        async function deleteServer(id) {
+            if (!confirm('Удалить этот сервер?')) return;
+            try {
+                await db.collection('servers').doc(id).delete();
+                console.log('🗑️ Сервер удалён');
+            } catch (e) {
+                console.error('❌ Ошибка удаления:', e);
+                alert('Не удалось удалить сервер');
+            }
+        }
+
+        async function updateAllStatuses() {
+            for (const server of servers) {
+                await updateServerStatus(server);
+            }
+        }
+
+        // ============================================================
+        //  ИНИЦИАЛИЗАЦИЯ
+        // ============================================================
+        function init() {
+            loadServers();
+
+            searchInput.addEventListener('input', applyFiltersAndRender);
+            versionFilterSelect.addEventListener('change', applyFiltersAndRender);
+            sortFilterSelect.addEventListener('change', applyFiltersAndRender);
+            resetFiltersBtn.addEventListener('click', function() {
+                searchInput.value = '';
+                versionFilterSelect.value = 'all';
+                sortFilterSelect.value = 'online';
+                applyFiltersAndRender();
+            });
+
+            document.querySelector('.hero h1').addEventListener('dblclick', function() {
+                if (confirm('Обновить статусы всех серверов?')) {
+                    updateAllStatuses();
+                }
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>
