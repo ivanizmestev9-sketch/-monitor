@@ -1,872 +1,244 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KreZzMonitor — мониторинг серверов Minecraft</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"/>
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <style>
-        /* ============================================================
-           CSS-ПЕРЕМЕННЫЕ (темы)
-           ============================================================ */
-        :root {
-            --bg-body: #0b0d12;
-            --bg-navbar: rgba(16, 19, 28, 0.85);
-            --bg-card: rgba(22, 26, 38, 0.75);
-            --bg-card-hover: rgba(30, 35, 50, 0.85);
-            --bg-filter: rgba(255, 255, 255, 0.03);
-            --bg-input: rgba(255, 255, 255, 0.04);
-            --bg-tag: rgba(167, 139, 250, 0.12);
-            --text-primary: #eef2f6;
-            --text-secondary: rgba(255, 255, 255, 0.55);
-            --text-muted: rgba(255, 255, 255, 0.25);
-            --border-color: rgba(255, 255, 255, 0.05);
-            --border-light: rgba(255, 255, 255, 0.06);
-            --shadow-color: rgba(0, 0, 0, 0.5);
-            --tag-color: #c4b5fd;
-            --ip-bg: rgba(255, 255, 255, 0.04);
-            --ip-hover: rgba(255, 255, 255, 0.08);
-            --vote-color: #eef2f6;
-            --arrow-color: rgba(255, 255, 255, 0.25);
-            --arrow-hover: #34d399;
-            --status-dot-on: #34d399;
-            --status-dot-off: #f87171;
-            --btn-outline-border: rgba(255, 255, 255, 0.12);
-            --btn-outline-hover: rgba(255, 255, 255, 0.06);
-            --danger-color: #ef4444;
-            --success-color: #10b981;
-            --avatar-bg: #1e2335;
-            --placeholder-color: rgba(255, 255, 255, 0.15);
-        }
-
-        body.light-theme {
-            --bg-body: #f0f2f5;
-            --bg-navbar: rgba(255, 255, 255, 0.9);
-            --bg-card: rgba(255, 255, 255, 0.85);
-            --bg-card-hover: rgba(255, 255, 255, 0.95);
-            --bg-filter: rgba(0, 0, 0, 0.03);
-            --bg-input: rgba(0, 0, 0, 0.04);
-            --bg-tag: rgba(124, 58, 237, 0.08);
-            --text-primary: #1a1a2e;
-            --text-secondary: rgba(0, 0, 0, 0.6);
-            --text-muted: rgba(0, 0, 0, 0.3);
-            --border-color: rgba(0, 0, 0, 0.08);
-            --border-light: rgba(0, 0, 0, 0.06);
-            --shadow-color: rgba(0, 0, 0, 0.1);
-            --tag-color: #5b21b6;
-            --ip-bg: rgba(0, 0, 0, 0.04);
-            --ip-hover: rgba(0, 0, 0, 0.08);
-            --vote-color: #1a1a2e;
-            --arrow-color: rgba(0, 0, 0, 0.25);
-            --arrow-hover: #059669;
-            --status-dot-on: #10b981;
-            --status-dot-off: #ef4444;
-            --btn-outline-border: rgba(0, 0, 0, 0.12);
-            --btn-outline-hover: rgba(0, 0, 0, 0.06);
-            --danger-color: #dc2626;
-            --success-color: #059669;
-            --avatar-bg: #e2e8f0;
-            --placeholder-color: rgba(0, 0, 0, 0.1);
-        }
-
-        /* ============================================================
-           ОБЩИЙ СТИЛЬ
-           ============================================================ */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            background: var(--bg-body);
-            color: var(--text-primary);
-            min-height: 100vh;
-            padding: 0 0 40px;
-            transition: background 0.3s, color 0.3s;
-        }
-        .container {
-            max-width: 1280px;
-            margin: 0 auto;
-            padding: 0 24px;
-        }
-        .navbar {
-            background: var(--bg-navbar);
-            backdrop-filter: blur(16px);
-            border-bottom: 1px solid var(--border-color);
-            padding: 14px 0;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            transition: background 0.3s;
-        }
-        .navbar .container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 16px;
-        }
-        .logo {
-            font-size: 26px;
-            font-weight: 800;
-            background: linear-gradient(135deg, #a78bfa, #34d399);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            letter-spacing: -0.5px;
-        }
-        .logo i {
-            -webkit-text-fill-color: initial;
-            color: #a78bfa;
-            margin-right: 6px;
-        }
-        .auth-buttons {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-        .btn {
-            padding: 9px 22px;
-            border: none;
-            border-radius: 40px;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.25s;
-            background: transparent;
-            color: var(--text-primary);
-            border: 1px solid var(--btn-outline-border);
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #7c3aed, #6d28d9);
-            border: none;
-            box-shadow: 0 4px 16px rgba(124, 58, 237, 0.3);
-            color: #fff;
-        }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 28px rgba(124, 58, 237, 0.45);
-        }
-        .btn-outline {
-            border: 1px solid var(--btn-outline-border);
-        }
-        .btn-outline:hover {
-            background: var(--btn-outline-hover);
-        }
-        .btn-success {
-            background: linear-gradient(135deg, #10b981, #059669);
-            border: none;
-            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
-            color: #fff;
-        }
-        .btn-success:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 28px rgba(16, 185, 129, 0.45);
-        }
-        .btn-danger {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
-            border: none;
-            color: white;
-        }
-        .btn-danger:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 28px rgba(239, 68, 68, 0.4);
-        }
-        .btn-sm {
-            padding: 6px 14px;
-            font-size: 12px;
-        }
-        .btn-back {
-            background: var(--bg-input);
-            border: 1px solid var(--border-light);
-            color: var(--text-primary);
-        }
-        .btn-back:hover {
-            background: var(--ip-hover);
-        }
-        .btn-theme {
-            padding: 8px 12px;
-            font-size: 18px;
-            border-radius: 50%;
-            width: 44px;
-            height: 44px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--bg-input);
-            border: 1px solid var(--border-light);
-            color: var(--text-primary);
-            transition: 0.2s;
-        }
-        .btn-theme:hover {
-            background: var(--ip-hover);
-            transform: scale(1.05);
-        }
-
-        /* ========== ГЕРОЙ ========== */
-        .hero {
-            text-align: center;
-            padding: 60px 0 48px;
-        }
-        .hero h1 {
-            font-size: 48px;
-            font-weight: 800;
-            line-height: 1.2;
-            background: linear-gradient(135deg, #e2e8f0 0%, #a78bfa 60%, #34d399 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        .hero p {
-            font-size: 18px;
-            color: var(--text-secondary);
-            max-width: 640px;
-            margin: 16px auto 32px;
-        }
-
-        /* ========== СТРАНИЦЫ (переключение) ========== */
-        .page {
-            display: none;
-            animation: fadeIn 0.3s ease;
-        }
-        .page.active {
-            display: block;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(12px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* ========== ФОРМА ДОБАВЛЕНИЯ ========== */
-        .add-form-page {
-            max-width: 720px;
-            margin: 0 auto 40px;
-            background: var(--bg-card);
-            backdrop-filter: blur(8px);
-            border: 1px solid var(--border-color);
-            border-radius: 24px;
-            padding: 30px 32px;
-            transition: background 0.3s, border 0.3s;
-        }
-        .add-form-page h2 {
-            font-size: 22px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .add-form-page .form-group {
-            margin-bottom: 16px;
-        }
-        .add-form-page .form-group label {
-            display: block;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            margin-bottom: 6px;
-        }
-        .add-form-page .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-        }
-        .add-form-page input,
-        .add-form-page select,
-        .add-form-page textarea {
-            width: 100%;
-            background: var(--bg-input);
-            border: 1px solid var(--border-light);
-            border-radius: 12px;
-            padding: 12px 16px;
-            color: var(--text-primary);
-            font-size: 14px;
-            outline: none;
-            transition: border 0.2s, background 0.3s;
-            font-family: inherit;
-        }
-        .add-form-page select option {
-            background: var(--bg-body);
-            color: var(--text-primary);
-        }
-        .add-form-page textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
-        .add-form-page input::placeholder,
-        .add-form-page textarea::placeholder {
-            color: var(--text-muted);
-        }
-        .add-form-page input:focus,
-        .add-form-page select:focus,
-        .add-form-page textarea:focus {
-            border-color: #7c3aed;
-        }
-        .add-form-page .tags-input-wrap {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .add-form-page .tags-input-wrap input {
-            flex: 1;
-            min-width: 150px;
-        }
-        .add-form-page .tag-item {
-            background: var(--bg-tag);
-            border: 1px solid rgba(167, 139, 250, 0.15);
-            padding: 4px 12px 4px 14px;
-            border-radius: 40px;
-            font-size: 13px;
-            color: var(--tag-color);
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .add-form-page .tag-item .remove-tag {
-            cursor: pointer;
-            color: var(--text-muted);
-            font-size: 12px;
-            transition: color 0.2s;
-        }
-        .add-form-page .tag-item .remove-tag:hover {
-            color: var(--danger-color);
-        }
-        .add-form-page .avatar-upload {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-        .add-form-page .avatar-preview {
-            width: 80px;
-            height: 80px;
-            border-radius: 16px;
-            background: var(--bg-input);
-            border: 2px dashed var(--border-light);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 32px;
-            color: var(--text-muted);
-            overflow: hidden;
-            flex-shrink: 0;
-            position: relative;
-        }
-        .add-form-page .avatar-preview img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .add-form-page .avatar-preview .placeholder {
-            font-size: 32px;
-            color: var(--text-muted);
-        }
-        .add-form-page .avatar-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .add-form-page .avatar-actions .file-input-wrap {
-            position: relative;
-            overflow: hidden;
-            display: inline-block;
-        }
-        .add-form-page .avatar-actions .file-input-wrap input[type="file"] {
-            position: absolute;
-            left: 0;
-            top: 0;
-            opacity: 0;
-            width: 100%;
-            height: 100%;
-            cursor: pointer;
-        }
-        .add-form-page .avatar-actions .file-name {
-            font-size: 13px;
-            color: var(--text-muted);
-            margin-top: 4px;
-        }
-        .add-form-page .form-actions {
-            display: flex;
-            gap: 12px;
-            margin-top: 8px;
-        }
-
-        /* ========== ФИЛЬТРЫ ========== */
-        .filters-bar {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 14px 18px;
-            background: var(--bg-filter);
-            backdrop-filter: blur(8px);
-            border: 1px solid var(--border-color);
-            border-radius: 60px;
-            padding: 12px 24px;
-            margin-bottom: 40px;
-            transition: background 0.3s, border 0.3s;
-        }
-        .filters-bar .search-wrap {
-            flex: 1 1 220px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: var(--bg-input);
-            border-radius: 40px;
-            padding: 4px 16px 4px 18px;
-            border: 1px solid var(--border-light);
-            transition: background 0.3s;
-        }
-        .filters-bar .search-wrap i {
-            color: var(--text-muted);
-            font-size: 14px;
-        }
-        .filters-bar .search-wrap input {
-            background: transparent;
-            border: none;
-            padding: 10px 0;
-            width: 100%;
-            color: var(--text-primary);
-            font-size: 14px;
-            outline: none;
-        }
-        .filters-bar .search-wrap input::placeholder {
-            color: var(--text-muted);
-        }
-        .filter-select {
-            background: var(--bg-input);
-            border: 1px solid var(--border-light);
-            border-radius: 40px;
-            padding: 10px 18px;
-            color: var(--text-primary);
-            font-size: 14px;
-            cursor: pointer;
-            outline: none;
-            min-width: 130px;
-            transition: background 0.3s, border 0.3s;
-        }
-        .filter-select option {
-            background: var(--bg-body);
-            color: var(--text-primary);
-        }
-        .filter-select:focus {
-            border-color: #7c3aed;
-        }
-        .filters-reset {
-            color: var(--text-muted);
-            font-size: 13px;
-            cursor: pointer;
-            transition: color 0.2s;
-            margin-left: auto;
-        }
-        .filters-reset:hover {
-            color: var(--danger-color);
-        }
-
-        /* ========== СЕТКА СЕРВЕРОВ (растянутые карточки) ========== */
-        .servers-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-            margin-top: 8px;
-        }
-        .server-card {
-            background: var(--bg-card);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--border-color);
-            border-radius: 24px;
-            padding: 22px 22px 20px;
-            transition: all 0.3s ease;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-        }
-        .server-card:hover {
-            transform: translateY(-6px);
-            border-color: rgba(167, 139, 250, 0.2);
-            box-shadow: 0 16px 48px var(--shadow-color);
-            background: var(--bg-card-hover);
-        }
-        .server-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 20px;
-            right: 20px;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, #a78bfa, #34d399, transparent);
-            opacity: 0;
-            transition: opacity 0.4s;
-        }
-        .server-card:hover::before {
-            opacity: 1;
-        }
-        .card-top {
-            display: flex;
-            align-items: flex-start;
-            gap: 14px;
-            margin-bottom: 12px;
-        }
-        .vote-block {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background: var(--bg-input);
-            padding: 4px 8px;
-            border-radius: 16px;
-            min-width: 42px;
-        }
-        .vote-block .vote-arrow {
-            color: var(--arrow-color);
-            font-size: 18px;
-            cursor: pointer;
-            transition: color 0.2s, transform 0.2s;
-            line-height: 1;
-        }
-        .vote-block .vote-arrow:hover {
-            color: var(--arrow-hover);
-            transform: scale(1.15);
-        }
-        .vote-block .vote-count {
-            font-weight: 700;
-            font-size: 17px;
-            color: var(--vote-color);
-            margin: 2px 0;
-        }
-        .server-avatar {
-            width: 52px;
-            height: 52px;
-            border-radius: 16px;
-            background: var(--avatar-bg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 26px;
-            color: #a78bfa;
-            flex-shrink: 0;
-            overflow: hidden;
-            border: 1px solid var(--border-light);
-            transition: background 0.3s;
-        }
-        .server-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .server-title {
-            flex: 1;
-            min-width: 0;
-        }
-        .server-title h3 {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 4px;
-            word-break: break-word;
-        }
-        .server-title .server-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-top: 4px;
-        }
-        .server-title .server-tags span {
-            background: var(--bg-tag);
-            border: 1px solid rgba(167, 139, 250, 0.12);
-            padding: 2px 12px;
-            border-radius: 40px;
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--tag-color);
-            letter-spacing: 0.3px;
-        }
-        .card-desc {
-            font-size: 14px;
-            color: var(--text-secondary);
-            line-height: 1.5;
-            margin: 10px 0 14px;
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-        .online-bar-wrap {
-            background: var(--bg-input);
-            border-radius: 40px;
-            height: 6px;
-            overflow: hidden;
-            margin: 6px 0 10px;
-        }
-        .online-bar-fill {
-            height: 100%;
-            border-radius: 40px;
-            background: linear-gradient(90deg, #7c3aed, #34d399);
-            width: 75%;
-            transition: width 0.6s ease;
-        }
-        .online-info {
-            display: flex;
-            justify-content: space-between;
-            font-size: 13px;
-            color: var(--text-secondary);
-        }
-        .online-info strong {
-            color: var(--text-primary);
-            font-weight: 600;
-        }
-        .card-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 16px;
-            padding-top: 14px;
-            border-top: 1px solid var(--border-color);
-        }
-        .card-actions .ip-copy {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: var(--ip-bg);
-            padding: 6px 16px 6px 14px;
-            border-radius: 40px;
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: background 0.2s, color 0.2s;
-            border: 1px solid var(--border-light);
-        }
-        .card-actions .ip-copy:hover {
-            background: var(--ip-hover);
-            color: var(--text-primary);
-        }
-        .card-actions .ip-copy i {
-            color: #34d399;
-        }
-        .card-actions .server-status {
-            font-size: 13px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .status-dot {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--status-dot-on);
-            box-shadow: 0 0 12px rgba(52, 211, 153, 0.3);
-        }
-        .status-dot.offline {
-            background: var(--status-dot-off);
-            box-shadow: 0 0 12px rgba(248, 113, 113, 0.2);
-        }
-        .server-card .delete-btn {
-            margin-top: 8px;
-            padding: 4px 14px;
-            font-size: 12px;
-            width: 100%;
-        }
-        .no-results {
-            grid-column: 1 / -1;
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-muted);
-            font-size: 18px;
-        }
-        .no-results i {
-            font-size: 48px;
-            display: block;
-            margin-bottom: 16px;
-            color: var(--text-muted);
-        }
-        .server-count {
-            color: var(--text-muted);
-            font-size: 14px;
-            font-weight: 400;
-            margin-left: 10px;
-        }
-
-        /* ========== АДАПТИВНОСТЬ ========== */
-        @media (max-width: 900px) {
-            .add-form-page .form-row {
-                grid-template-columns: 1fr;
-            }
-            .filters-bar {
-                border-radius: 32px;
-                padding: 16px 20px;
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .filters-bar .search-wrap {
-                flex: 1 1 auto;
-            }
-            .filters-reset {
-                margin-left: 0;
-                text-align: right;
-            }
-            .hero h1 {
-                font-size: 34px;
-            }
-            .servers-grid {
-                gap: 16px;
-            }
-            .add-form-page .avatar-upload {
-                flex-direction: column;
-                align-items: stretch;
-            }
-        }
-        @media (max-width: 480px) {
-            .container {
-                padding: 0 16px;
-            }
-            .hero h1 {
-                font-size: 28px;
-            }
-            .server-card {
-                padding: 18px 16px;
-            }
-            .card-top {
-                flex-wrap: wrap;
-            }
-            .navbar .container {
-                flex-wrap: wrap;
-                gap: 10px;
-            }
-            .auth-buttons .btn {
-                padding: 7px 14px;
-                font-size: 12px;
-            }
-        }
-
-        /* ============================================================
-           СПЛЕШ-ЭКРАН (DDoS защита)
-           ============================================================ */
-        #splashScreen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--bg-body);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            transition: opacity 0.6s ease;
-            font-family: 'Segoe UI', system-ui, sans-serif;
-        }
-        #splashScreen .spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid rgba(167, 139, 250, 0.2);
-            border-top-color: #a78bfa;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-        #splashScreen h2 {
-            font-weight: 400;
-            color: var(--text-secondary);
-        }
-        #splashScreen p {
-            color: var(--text-muted);
-            font-size: 14px;
-            margin-top: 8px;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        /* ===== ВЕСЬ ВАШ CSS (без изменений) ===== */
+        *{box-sizing:border-box;margin:0;padding:0;font-family:Tahoma,Geneva,sans-serif}
+        :root{--bg-body:#fff;--bg-header:#212121;--bg-header-hover:#2b2b2b;--bg-card:#fff;--bg-card-hover:#f8f8f8;--bg-filter:#f5f5f5;--bg-input:#f0f0f0;--bg-tag:#e8f0fe;--text-primary:#333;--text-secondary:#666;--text-muted:#888;--text-link:#06c;--border-color:#e0e0e0;--border-light:#eee;--shadow-color:rgba(0,0,0,0.05);--tag-color:#06c;--ip-color:#444;--btn-outline-border:#ccc;--btn-outline-hover:#f0f0f0;--danger-color:#dc3545;--success-color:#28a745;--status-dot-on:#28a745;--status-dot-off:#dc3545;--arrow-color:#aaa;--arrow-hover:#28a745;--arrow-active:#28a745;--vote-color:#333;--progress-bg:#28a745;--progress-bg-offline:#888;--progress-text:#fff;--splash-bg:#fff;--bg-page-legal:#fafafa;--arrow-disabled:#ccc;--chart-grid:#ddd;--chart-line:#28a745;--chart-fill:rgba(40,167,69,0.2);--online-icon-color:#28a745;--auth-btn-bg:#2980b9;--auth-btn-hover:#3498db;--char-counter-color:#888}
+        body.dark-theme{--bg-body:#0b0d12;--bg-header:#161a24;--bg-header-hover:#1e2335;--bg-card:rgba(22,26,38,0.8);--bg-card-hover:rgba(30,35,50,0.9);--bg-filter:rgba(255,255,255,0.05);--bg-input:rgba(255,255,255,0.06);--bg-tag:rgba(167,139,250,0.15);--text-primary:#eef2f6;--text-secondary:rgba(255,255,255,0.6);--text-muted:rgba(255,255,255,0.35);--text-link:#7c9eff;--border-color:rgba(255,255,255,0.08);--border-light:rgba(255,255,255,0.05);--shadow-color:rgba(0,0,0,0.4);--tag-color:#a78bfa;--ip-color:#c0c0c0;--btn-outline-border:rgba(255,255,255,0.12);--btn-outline-hover:rgba(255,255,255,0.06);--danger-color:#ef4444;--success-color:#10b981;--status-dot-on:#34d399;--status-dot-off:#f87171;--arrow-color:rgba(255,255,255,0.25);--arrow-hover:#34d399;--arrow-active:#34d399;--vote-color:#eef2f6;--progress-bg:#2ecc71;--progress-bg-offline:#555;--progress-text:#fff;--splash-bg:#0b0d12;--bg-page-legal:#141824;--arrow-disabled:#555;--chart-grid:#444;--chart-line:#34d399;--chart-fill:rgba(52,211,153,0.2);--online-icon-color:#34d399;--auth-btn-bg:#2980b9;--auth-btn-hover:#3498db}
+        html{zoom:1.25;-moz-transform:scale(1.25);-moz-transform-origin:top left}
+        body{background:var(--bg-body);color:var(--text-primary);font-size:13px;display:flex;flex-direction:column;min-height:100vh;transition:background .3s,color .3s}
+        
+        /* ===== ЗАЩИТА ОТ КОПИРОВАНИЯ (CSS) ===== */
+        body{-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}
+        *{-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+        img{-webkit-user-drag:none;user-drag:none}
+        .protected-content{-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}
+        
+        header{background:var(--bg-header);border-bottom:2px solid rgba(0,0,0,0.2);padding:0 40px;height:50px;display:flex;align-items:center;justify-content:space-between;transition:background .3s}
+        .header-left{display:flex;align-items:center;gap:8px;color:#fff;font-size:15px;font-weight:bold;text-decoration:none;cursor:pointer}
+        nav{display:flex;align-items:center;height:100%;gap:5px}
+        nav a{color:#b3b3b3;text-decoration:none;font-size:12px;padding:0 12px;height:100%;display:flex;align-items:center;transition:background .2s;cursor:pointer}
+        nav a:hover{color:#fff;background:var(--bg-header-hover)}
+        .nav-btn{color:#fff!important;border-radius:3px;padding:0 14px!important;height:30px!important;margin:auto 0;border:none;font-size:12px;cursor:pointer;transition:background .2s}
+        .nav-login-btn{background:#2980b9;margin-right:6px!important}
+        .nav-login-btn:hover{background:#3498db!important}
+        .nav-register-btn{background:#27ae60;margin-left:0!important}
+        .nav-register-btn:hover{background:#2ecc71!important}
+        .nav-logout-btn{background:#dc3545}
+        .nav-logout-btn:hover{background:#c82333!important}
+        .nav-user-info{color:#b3b3b3!important;font-size:12px;display:flex;align-items:center;gap:8px;padding:0 8px!important;height:100%!important;cursor:default}
+        .nav-user-info img{width:28px;height:28px;border-radius:50%}
+        .nav-add-btn{color:#b3b3b3!important;background:transparent!important;border-radius:0!important;padding:0 12px!important;height:100%!important;margin:auto 0!important}
+        .nav-add-btn:hover{color:#fff!important;background:var(--bg-header-hover)!important}
+        #authButtons{display:flex;align-items:center;gap:4px}
+        .theme-toggle{background:0;border:0;color:#b3b3b3;font-size:18px;cursor:pointer;padding:0 10px;height:100%;display:flex;align-items:center;transition:color .2s}
+        .theme-toggle:hover{color:#fff}
+        .main-content{max-width:960px;width:100%;margin:25px auto;padding:0 15px;flex:1}
+        .page{display:none;animation:fadeIn .3s ease}
+        .page.active{display:block}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+        h1{font-size:24px;font-weight:400;color:var(--text-primary);margin-bottom:12px}
+        .top-description{color:var(--text-secondary);font-size:12.5px;line-height:1.5;margin-bottom:15px}
+        .version-box{border:1px solid var(--border-color);border-radius:3px;padding:8px;display:flex;flex-wrap:wrap;gap:3px;background:var(--bg-card);margin-bottom:15px;transition:background .3s,border .3s}
+        .v-tag{font-size:11px;color:var(--text-link);text-decoration:none;padding:3px 6px;border-radius:2px;transition:all .2s;cursor:pointer}
+        .v-tag:hover{text-decoration:underline;background:var(--bg-tag)}
+        .v-tag.all-versions{background:#00a2ff;color:#fff;border-radius:2px;padding:3px 8px}
+        .v-tag.all-versions:hover{background:#0090e0;text-decoration:none}
+        .v-tag.active-version{background:var(--bg-tag);font-weight:bold;text-decoration:underline}
+        .servers-container{display:flex;flex-direction:column;gap:20px;margin-bottom:30px}
+        .server-row{display:flex;align-items:center;justify-content:space-between;background:var(--bg-card);padding:12px 16px;border-radius:6px;border:1px solid var(--border-light);transition:background .3s,border .3s,transform .2s;gap:10px}
+        .server-row:hover{background:var(--bg-card-hover);transform:translateY(-2px);box-shadow:0 4px 12px var(--shadow-color)}
+        .server-left-side{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}
+        .server-top-row{display:flex;align-items:flex-start;width:100%}
+        .server-icon{width:32px;height:32px;margin-right:15px;margin-top:2px;flex-shrink:0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#a78bfa;background:var(--bg-input);overflow:hidden}
+        .server-icon img{width:100%;height:100%;object-fit:cover}
+        .server-main-info{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}
+        .server-title-line{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+        .flag-ru{width:16px;height:11px;background:linear-gradient(#fff 33%,#0039a6 33%,#0039a6 66%,#d52b1e 66%);border:1px solid #ddd;flex-shrink:0}
+        .server-title{color:var(--text-link);font-size:13.5px;font-weight:bold;text-decoration:none;cursor:pointer;word-break:break-word}
+        .server-title:hover{text-decoration:underline}
+        .server-meta-line{font-size:11px;color:var(--text-muted);display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center}
+        .server-meta-line .meta-ip{color:var(--ip-color);font-weight:bold;cursor:pointer;border-bottom:1px dashed var(--border-color);word-break:break-all}
+        .server-meta-line .meta-ip:hover{color:var(--text-link)}
+        .server-meta-line .meta-highlight{color:var(--text-secondary)}
+        .server-meta-line .meta-time{color:var(--text-muted);font-style:italic}
+        .server-description{font-size:12px;color:var(--text-secondary);margin-top:2px;line-height:1.4;word-break:break-word;overflow-wrap:break-word;max-width:100%}
+        .server-tags-line{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+        .server-tags-line span{background:var(--bg-tag);padding:1px 10px;border-radius:12px;font-size:11px;color:var(--tag-color)}
+        .server-actions{display:flex;align-items:center;gap:12px;margin-left:10px;flex-shrink:0}
+        .vote-block{display:flex;flex-direction:column;align-items:center;background:var(--bg-input);padding:4px 8px;border-radius:12px;min-width:36px}
+        .vote-block .vote-arrow{color:var(--arrow-color);font-size:14px;cursor:pointer;transition:color .2s,transform .2s;line-height:1}
+        .vote-block .vote-arrow:hover{color:var(--arrow-hover);transform:scale(1.2)}
+        .vote-block .vote-arrow-active{color:var(--arrow-active);font-size:14px;cursor:pointer;line-height:1}
+        .vote-block .vote-arrow-active:hover{transform:scale(1.2)}
+        .vote-block .vote-count{font-weight:700;font-size:15px;color:var(--vote-color)}
+        .online-wrapper{display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:15px}
+        .online-icon-svg{width:24px;height:24px;fill:none;stroke:var(--online-icon-color);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;transition:stroke .3s,opacity .3s}
+        .online-icon-svg .head{fill:rgba(40,167,69,0.1)}
+        .online-icon-svg .body{fill:rgba(40,167,69,0.05)}
+        body.dark-theme .online-icon-svg .head{fill:rgba(52,211,153,0.1)}
+        body.dark-theme .online-icon-svg .body{fill:rgba(52,211,153,0.05)}
+        .online-icon-svg.offline{stroke:var(--status-dot-off);opacity:.5}
+        .online-icon-svg.offline .head{fill:rgba(220,53,69,0.1)}
+        .online-icon-svg.offline .body{fill:rgba(220,53,69,0.05)}
+        .online-progress-bar{width:130px;height:20px;background:var(--progress-bg);border-radius:3px;display:flex;align-items:center;justify-content:center;color:var(--progress-text);font-size:11px;font-weight:bold;transition:background .3s;flex-shrink:0}
+        .online-progress-bar.offline{background:var(--progress-bg-offline)}
+        .server-status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--status-dot-on);margin-right:4px;flex-shrink:0}
+        .server-status-dot.offline{background:var(--status-dot-off)}
+        .pagination{display:flex;justify-content:center;gap:5px;margin:30px 0}
+        .page-link{display:inline-block;padding:5px 10px;border:1px solid var(--border-color);color:var(--text-link);text-decoration:none;border-radius:2px;cursor:pointer;background:var(--bg-card);transition:background .2s}
+        .page-link.active{background:var(--bg-filter);color:var(--text-primary);font-weight:bold;border-color:var(--border-color)}
+        .page-link:hover:not(.active){background:var(--bg-card-hover);text-decoration:underline}
+        .legal-page{max-width:800px;margin:0 auto;padding:30px;background:var(--bg-card);border-radius:12px;border:1px solid var(--border-color);line-height:1.6}
+        .legal-page h1{margin-bottom:20px;font-size:26px}
+        .legal-page h2{font-size:18px;margin-top:20px;margin-bottom:10px;color:var(--text-secondary)}
+        .legal-page p{margin-bottom:12px;color:var(--text-secondary)}
+        .legal-page ul{margin-left:20px;margin-bottom:12px;color:var(--text-secondary)}
+        .legal-page .back-link{display:inline-block;margin-bottom:20px;cursor:pointer;color:var(--text-link)}
+        .legal-page .back-link:hover{text-decoration:underline}
+        .add-form-page{max-width:720px;margin:0 auto 40px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:12px;padding:30px 32px;transition:background .3s,border .3s}
+        .add-form-page h2{font-size:22px;margin-bottom:20px;display:flex;align-items:center;gap:10px}
+        .add-form-page .form-group{margin-bottom:16px}
+        .add-form-page .form-group label{display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px}
+        .add-form-page .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+        .add-form-page input,.add-form-page select,.add-form-page textarea{width:100%;background:var(--bg-input);border:1px solid var(--border-light);border-radius:8px;padding:10px 14px;color:var(--text-primary);font-size:14px;outline:0;transition:border .2s,background .3s;font-family:inherit}
+        .add-form-page select option{background:var(--bg-body);color:var(--text-primary)}
+        .add-form-page textarea{resize:vertical;min-height:80px}
+        .add-form-page input:focus,.add-form-page select:focus,.add-form-page textarea:focus{border-color:#2980b9}
+        .add-form-page .tags-input-wrap{display:flex;gap:10px;flex-wrap:wrap}
+        .add-form-page .tags-input-wrap input{flex:1;min-width:150px}
+        .add-form-page .tag-item{background:var(--bg-tag);border:1px solid var(--border-light);padding:4px 12px 4px 14px;border-radius:20px;font-size:13px;color:var(--tag-color);display:inline-flex;align-items:center;gap:6px}
+        .add-form-page .tag-item .remove-tag{cursor:pointer;color:var(--text-muted);font-size:12px;transition:color .2s}
+        .add-form-page .tag-item .remove-tag:hover{color:var(--danger-color)}
+        .add-form-page .avatar-upload{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+        .add-form-page .avatar-preview{width:80px;height:80px;border-radius:12px;background:var(--bg-input);border:2px dashed var(--border-color);display:flex;align-items:center;justify-content:center;font-size:32px;color:var(--text-muted);overflow:hidden;flex-shrink:0;position:relative}
+        .add-form-page .avatar-preview img{width:100%;height:100%;object-fit:cover}
+        .add-form-page .form-actions{display:flex;gap:12px;margin-top:8px}
+        .add-form-page .char-counter{font-size:11px;color:var(--char-counter-color);text-align:right;margin-top:4px}
+        .add-form-page .char-counter.over{color:var(--danger-color)}
+        .btn{padding:9px 22px;border:none;border-radius:40px;font-weight:600;font-size:14px;cursor:pointer;transition:all .25s;background:transparent;color:var(--text-primary);border:1px solid var(--btn-outline-border)}
+        .btn-primary{background:#2980b9;border:none;color:#fff}
+        .btn-primary:hover{background:#3498db}
+        .btn-success{background:#27ae60;border:none;color:#fff}
+        .btn-success:hover{background:#2ecc71}
+        .btn-danger{background:#dc3545;border:none;color:#fff}
+        .btn-danger:hover{background:#c82333}
+        .btn-outline{border:1px solid var(--btn-outline-border)}
+        .btn-outline:hover{background:var(--btn-outline-hover)}
+        .btn-sm{padding:6px 14px;font-size:12px}
+        .btn-back{background:var(--bg-input);border:1px solid var(--border-light);color:var(--text-primary)}
+        .btn-back:hover{background:var(--btn-outline-hover)}
+        footer{background:var(--bg-header);color:#888;padding:20px 40px;font-size:11px;border-top:1px solid rgba(0,0,0,0.2);margin-top:auto;transition:background .3s}
+        .footer-container{max-width:960px;margin:0 auto;display:flex;justify-content:space-between;align-items:center}
+        .footer-links a{color:#888;text-decoration:none;margin-left:15px;cursor:pointer}
+        .footer-links a:hover{color:#fff;text-decoration:underline}
+        #splashScreen{position:fixed;top:0;left:0;width:100%;height:100%;background:var(--splash-bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .6s ease}
+        #splashScreen .spinner{width:60px;height:60px;border:4px solid rgba(167,139,250,0.2);border-top-color:#a78bfa;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 20px}
+        #splashScreen h2{font-weight:400;color:var(--text-secondary)}
+        #splashScreen p{color:var(--text-muted);font-size:14px;margin-top:8px}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        #copyNotification{position:fixed;top:70px;right:30px;background:var(--success-color);color:#fff;padding:10px 18px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.2);font-size:14px;font-weight:bold;opacity:0;transform:translateY(-10px);transition:opacity .3s,transform .3s;pointer-events:none;z-index:999}
+        #copyNotification.show{opacity:1;transform:translateY(0)}
+        .stats-page{max-width:800px;margin:0 auto;background:var(--bg-card);border-radius:12px;padding:30px 32px;border:1px solid var(--border-color)}
+        .stats-page h2{font-size:24px;margin-bottom:8px}
+        .stats-page .stats-sub{color:var(--text-secondary);margin-bottom:20px;font-size:14px}
+        .stats-page .stats-detail{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:20px 0}
+        .stats-page .stats-detail .stat-item{background:var(--bg-input);padding:10px 14px;border-radius:8px}
+        .stats-page .stats-detail .stat-item .label{font-size:11px;color:var(--text-muted);text-transform:uppercase}
+        .stats-page .stats-detail .stat-item .value{font-size:18px;font-weight:bold;color:var(--text-primary)}
+        .stats-page canvas{width:100%!important;height:200px!important;background:var(--bg-input);border-radius:8px;margin-top:10px}
+        .stats-page .back-link{display:inline-block;margin-bottom:20px;cursor:pointer;color:var(--text-link)}
+        .stats-page .back-link:hover{text-decoration:underline}
+        .auth-page{max-width:420px;margin:0 auto 40px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:16px;padding:40px 36px;transition:background .3s,border .3s}
+        .auth-page h2{font-size:24px;text-align:center;margin-bottom:8px}
+        .auth-page .auth-sub{color:var(--text-secondary);font-size:14px;text-align:center;margin-bottom:30px}
+        .auth-page .form-group{margin-bottom:16px}
+        .auth-page .form-group label{display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px}
+        .auth-page .form-group input{width:100%;background:var(--bg-input);border:1px solid var(--border-light);border-radius:8px;padding:10px 14px;color:var(--text-primary);font-size:14px;outline:0;transition:border .2s,background .3s}
+        .auth-page .form-group input:focus{border-color:#2980b9}
+        .auth-btn{width:100%;padding:12px;background:var(--auth-btn-bg);color:#fff;border:none;border-radius:40px;font-size:16px;font-weight:600;cursor:pointer;transition:background .25s}
+        .auth-btn:hover{background:var(--auth-btn-hover)}
+        .auth-btn:disabled{opacity:.6;cursor:not-allowed}
+        .auth-page .auth-error{color:var(--danger-color);font-size:13px;margin-top:12px;min-height:20px;text-align:center}
+        .auth-page .auth-success{color:var(--success-color);font-size:13px;margin-top:12px;min-height:20px;text-align:center}
+        .auth-page .auth-links{text-align:center;margin-top:16px;font-size:14px;color:var(--text-secondary)}
+        .auth-page .auth-links a{color:var(--text-link);cursor:pointer;text-decoration:none}
+        .auth-page .auth-links a:hover{text-decoration:underline}
+        .auth-page .back-link{display:block;text-align:center;margin-top:20px;cursor:pointer;color:var(--text-link);font-size:13px}
+        .auth-page .back-link:hover{text-decoration:underline}
+        .verify-page{max-width:420px;margin:0 auto 40px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:16px;padding:40px 36px;transition:background .3s,border .3s}
+        .verify-page h2{font-size:24px;text-align:center;margin-bottom:8px}
+        .verify-page .verify-sub{color:var(--text-secondary);font-size:14px;text-align:center;margin-bottom:20px}
+        .verify-page .form-group{margin-bottom:16px}
+        .verify-page .form-group label{display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px}
+        .verify-page .form-group input{width:100%;background:var(--bg-input);border:1px solid var(--border-light);border-radius:8px;padding:10px 14px;color:var(--text-primary);font-size:14px;outline:0;transition:border .2s,background .3s;text-align:center;letter-spacing:8px;font-size:20px;font-weight:bold}
+        .verify-page .form-group input:focus{border-color:#2980b9}
+        .verify-btn{width:100%;padding:12px;background:var(--success-color);color:#fff;border:none;border-radius:40px;font-size:16px;font-weight:600;cursor:pointer;transition:background .25s}
+        .verify-btn:hover{opacity:.85}
+        .verify-btn:disabled{opacity:.6;cursor:not-allowed}
+        .verify-page .verify-error{color:var(--danger-color);font-size:13px;margin-top:12px;min-height:20px;text-align:center}
+        .verify-page .verify-success{color:var(--success-color);font-size:13px;margin-top:12px;min-height:20px;text-align:center}
+        .verify-page .resend-link{text-align:center;margin-top:16px;font-size:14px;color:var(--text-secondary)}
+        .verify-page .resend-link a{color:var(--text-link);cursor:pointer;text-decoration:none}
+        .verify-page .resend-link a:hover{text-decoration:underline}
+        .verify-page .back-link{display:block;text-align:center;margin-top:20px;cursor:pointer;color:var(--text-link);font-size:13px}
+        .verify-page .back-link:hover{text-decoration:underline}
+        @media(max-width:768px){header{padding:0 15px;height:auto;flex-wrap:wrap;gap:5px;padding-top:8px;padding-bottom:8px}nav a{padding:0 8px;font-size:11px}#authButtons{gap:4px}.server-row{flex-wrap:wrap;gap:10px}.online-wrapper{margin-left:0;width:100%;justify-content:flex-start}.online-progress-bar{flex:1;max-width:200px}.server-left-side{width:100%}.add-form-page .form-row{grid-template-columns:1fr}.footer-container{flex-direction:column;gap:10px;text-align:center}.footer-links a{margin:0 8px}.stats-page .stats-detail{grid-template-columns:1fr}.auth-page,.verify-page{padding:30px 20px}}
+        @media(max-width:480px){.server-title{font-size:12px}.server-meta-line{font-size:10px}.server-actions .vote-block{min-width:30px;padding:2px 6px}.server-actions .vote-block .vote-count{font-size:13px}.add-form-page{padding:16px}}
     </style>
 </head>
 <body>
-
-    <!-- ============================================================
-         СПЛЕШ-ЭКРАН (ПРОВЕРКА СОЕДИНЕНИЯ)
-         ============================================================ -->
-    <div id="splashScreen">
-        <div class="spinner"></div>
-        <h2>Проверка соединения...</h2>
-        <p>Защита от DDoS-атак</p>
-    </div>
-
-    <!-- ============================================================
-         ОСНОВНОЙ КОНТЕНТ
-         ============================================================ -->
-    <header class="navbar">
-        <div class="container">
-            <div class="logo" onclick="showPage('main')" style="cursor:pointer;">
-                <i class="fas fa-cube"></i> KreZzMonitor
+    <!-- ===== ВЕСЬ HTML (без изменений) ===== -->
+    <div id="copyNotification">Скопировано!</div>
+    <div id="splashScreen"><div class="spinner"></div><h2>Проверка соединения...</h2><p>Защита от DDoS</p></div>
+    <header>
+        <a class="header-left" onclick="showPage('main')"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#fff" stroke-width="2" fill="none"/></svg>KreZzMonitor</a>
+        <nav id="mainNav">
+            <a onclick="showPage('main')">Новые сервера</a>
+            <a class="nav-add-btn" onclick="showPage('add')">Добавить сервер</a>
+            <div id="authButtons">
+                <button class="nav-btn nav-login-btn" onclick="showPage('login')">Войти</button>
+                <button class="nav-btn nav-register-btn" onclick="showPage('register')">Зарегистрироваться</button>
             </div>
-            <div class="auth-buttons">
-                <button class="btn btn-theme" id="themeToggle" title="Переключить тему">
-                    <i class="fas fa-moon"></i>
-                </button>
-                <button class="btn btn-success" onclick="showPage('add')"><i class="fas fa-plus-circle"></i> Добавить</button>
-                <button class="btn btn-outline"><i class="fas fa-sign-in-alt"></i> Войти</button>
-                <button class="btn btn-primary"><i class="fas fa-user-plus"></i> Регистрация</button>
+            <div id="userInfo" style="display:none;">
+                <span class="nav-user-info" id="userDisplayName">
+                    <img id="userAvatar" src="" alt="avatar" />
+                    <span id="userNameText"></span>
+                </span>
+                <button class="nav-btn nav-logout-btn" onclick="logoutUser()">Выйти</button>
             </div>
-        </div>
+            <button class="theme-toggle" id="themeToggle" title="Переключить тему"><i class="fas fa-moon"></i></button>
+        </nav>
     </header>
-
-    <main class="container">
-        <!-- ГЛАВНАЯ -->
+    <div class="main-content">
         <div class="page active" id="page-main">
-            <section class="hero">
-                <h1>Найди свой идеальный сервер</h1>
-                <p>Тысячи серверов Minecraft в одном месте. Голосуй, добавляй, играй.</p>
-                <button class="btn btn-success" onclick="showPage('add')">
-                    <i class="fas fa-plus-circle"></i> Добавить свой сервер
-                </button>
-            </section>
-
-            <div class="filters-bar">
-                <div class="search-wrap">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="searchInput" placeholder="Поиск по названию..." />
-                </div>
-                <select class="filter-select" id="versionFilter">
-                    <option value="all">Все версии</option>
-                </select>
-                <select class="filter-select" id="sortFilter">
-                    <option value="online">Сначала онлайн</option>
-                    <option value="players">По игрокам</option>
-                    <option value="votes">По голосам</option>
-                    <option value="newest">Сначала новые</option>
-                </select>
-                <span class="filters-reset" id="resetFilters"><i class="fas fa-undo-alt"></i> Сбросить</span>
+            <h1>Новые сервера Майнкрафт</h1>
+            <p class="top-description">На этой странице отображаются новые сервера Майнкрафт, которые открылись только что или совсем недавно. Сервера отсортированы по дате открытия в порядке от самых новых к старым.</p>
+            <div class="version-box" id="versionBox"><a class="v-tag all-versions" data-version="all">Все версии</a></div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+                <input type="text" id="searchInput" placeholder="Поиск по названию..." style="flex:1;padding:8px 14px;border:1px solid var(--border-color);border-radius:4px;background:var(--bg-input);color:var(--text-primary);outline:0;font-size:13px;" />
             </div>
-
-            <div id="serversContainer">
-                <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-                    📡 Все серверы
-                    <span class="server-count" id="serverCount">(0)</span>
-                </h2>
-                <div class="servers-grid" id="serversGrid">
-                    <div class="no-results"><i class="fas fa-server"></i> Загрузка...</div>
-                </div>
-            </div>
+            <div class="servers-container" id="serversContainer"><div style="text-align:center;padding:40px 0;color:var(--text-muted);"><i class="fas fa-server" style="font-size:32px;display:block;margin-bottom:12px;"></i>Загрузка...</div></div>
+            <div class="pagination" id="pagination"></div>
         </div>
-
-        <!-- ДОБАВЛЕНИЕ -->
         <div class="page" id="page-add">
-            <div style="margin-top: 20px;">
-                <button class="btn btn-back" onclick="showPage('main')">
-                    <i class="fas fa-arrow-left"></i> Назад
-                </button>
-            </div>
-
+            <div style="margin-top:10px;margin-bottom:20px;"><button class="btn btn-back" onclick="showPage('main')"><i class="fas fa-arrow-left"></i> Назад</button></div>
             <div class="add-form-page">
-                <h2><i class="fas fa-server" style="color: #a78bfa;"></i> Добавить сервер</h2>
-
+                <h2><i class="fas fa-server"></i> Добавить сервер</h2>
                 <div class="form-group">
-                    <label>Название сервера *</label>
-                    <input type="text" id="serverName" placeholder="Например: Hypixel" />
+                    <label>Название сервера * (3-50 символов)</label>
+                    <input type="text" id="serverName" placeholder="Например: Hypixel" maxlength="50" />
+                    <div class="char-counter" id="nameCounter">0/50</div>
                 </div>
-
                 <div class="form-row">
                     <div class="form-group">
                         <label>IP адрес *</label>
@@ -874,134 +246,178 @@
                     </div>
                     <div class="form-group">
                         <label>Порт (необязательно)</label>
-                        <input type="number" id="serverPort" placeholder="25565 (по умолчанию)" value="25565" />
+                        <input type="number" id="serverPort" placeholder="25565" value="25565" />
                     </div>
                 </div>
-
-                <!-- Версия с "Авто" -->
                 <div class="form-group">
                     <label>Версия Minecraft</label>
                     <select id="serverVersion">
                         <option value="auto" selected>Авто (из статуса)</option>
-                        <option value="1.21">1.21</option>
-                        <option value="1.20.6">1.20.6</option>
-                        <option value="1.20.4">1.20.4</option>
-                        <option value="1.20.2">1.20.2</option>
-                        <option value="1.20.1">1.20.1</option>
-                        <option value="1.20">1.20</option>
-                        <option value="1.19.4">1.19.4</option>
-                        <option value="1.19.3">1.19.3</option>
-                        <option value="1.19.2">1.19.2</option>
-                        <option value="1.19">1.19</option>
-                        <option value="1.18.2">1.18.2</option>
-                        <option value="1.18.1">1.18.1</option>
-                        <option value="1.18">1.18</option>
-                        <option value="1.17.1">1.17.1</option>
-                        <option value="1.17">1.17</option>
-                        <option value="1.16.5">1.16.5</option>
-                        <option value="1.16.4">1.16.4</option>
-                        <option value="1.16.3">1.16.3</option>
-                        <option value="1.16.2">1.16.2</option>
-                        <option value="1.16.1">1.16.1</option>
-                        <option value="1.16">1.16</option>
-                        <option value="1.15.2">1.15.2</option>
-                        <option value="1.15.1">1.15.1</option>
-                        <option value="1.15">1.15</option>
-                        <option value="1.14.4">1.14.4</option>
-                        <option value="1.14.3">1.14.3</option>
-                        <option value="1.14.2">1.14.2</option>
-                        <option value="1.14.1">1.14.1</option>
-                        <option value="1.14">1.14</option>
-                        <option value="1.13.2">1.13.2</option>
-                        <option value="1.13.1">1.13.1</option>
-                        <option value="1.13">1.13</option>
-                        <option value="1.12.2">1.12.2</option>
-                        <option value="1.12.1">1.12.1</option>
-                        <option value="1.12">1.12</option>
-                        <option value="1.11.2">1.11.2</option>
-                        <option value="1.11.1">1.11.1</option>
-                        <option value="1.11">1.11</option>
-                        <option value="1.10.2">1.10.2</option>
-                        <option value="1.10.1">1.10.1</option>
-                        <option value="1.10">1.10</option>
-                        <option value="1.9.4">1.9.4</option>
-                        <option value="1.9.3">1.9.3</option>
-                        <option value="1.9.2">1.9.2</option>
-                        <option value="1.9.1">1.9.1</option>
-                        <option value="1.9">1.9</option>
-                        <option value="1.8.9">1.8.9</option>
-                        <option value="1.8.8">1.8.8</option>
-                        <option value="1.8.7">1.8.7</option>
-                        <option value="1.8.6">1.8.6</option>
-                        <option value="1.8.5">1.8.5</option>
-                        <option value="1.8.4">1.8.4</option>
-                        <option value="1.8.3">1.8.3</option>
-                        <option value="1.8.2">1.8.2</option>
-                        <option value="1.8.1">1.8.1</option>
-                        <option value="1.8">1.8</option>
-                        <option value="custom">Другая (введите вручную)</option>
+                        <option value="1.21">1.21</option><option value="1.20.6">1.20.6</option><option value="1.20.4">1.20.4</option>
+                        <option value="1.20.2">1.20.2</option><option value="1.20.1">1.20.1</option><option value="1.20">1.20</option>
+                        <option value="1.19.4">1.19.4</option><option value="1.19.3">1.19.3</option><option value="1.19.2">1.19.2</option>
+                        <option value="1.19">1.19</option><option value="1.18.2">1.18.2</option><option value="1.18.1">1.18.1</option>
+                        <option value="1.18">1.18</option><option value="1.17.1">1.17.1</option><option value="1.17">1.17</option>
+                        <option value="1.16.5">1.16.5</option><option value="1.16.4">1.16.4</option><option value="1.16.3">1.16.3</option>
+                        <option value="1.16.2">1.16.2</option><option value="1.16.1">1.16.1</option><option value="1.16">1.16</option>
+                        <option value="1.15.2">1.15.2</option><option value="1.15.1">1.15.1</option><option value="1.15">1.15</option>
+                        <option value="1.14.4">1.14.4</option><option value="1.14.3">1.14.3</option><option value="1.14.2">1.14.2</option>
+                        <option value="1.14.1">1.14.1</option><option value="1.14">1.14</option><option value="1.13.2">1.13.2</option>
+                        <option value="1.13.1">1.13.1</option><option value="1.13">1.13</option><option value="1.12.2">1.12.2</option>
+                        <option value="1.12.1">1.12.1</option><option value="1.12">1.12</option><option value="1.11.2">1.11.2</option>
+                        <option value="1.11.1">1.11.1</option><option value="1.11">1.11</option><option value="1.10.2">1.10.2</option>
+                        <option value="1.10.1">1.10.1</option><option value="1.10">1.10</option><option value="1.9.4">1.9.4</option>
+                        <option value="1.9.3">1.9.3</option><option value="1.9.2">1.9.2</option><option value="1.9.1">1.9.1</option>
+                        <option value="1.9">1.9</option><option value="1.8.9">1.8.9</option><option value="1.8.8">1.8.8</option>
+                        <option value="1.8.7">1.8.7</option><option value="1.8.6">1.8.6</option><option value="1.8.5">1.8.5</option>
+                        <option value="1.8.4">1.8.4</option><option value="1.8.3">1.8.3</option><option value="1.8.2">1.8.2</option>
+                        <option value="1.8.1">1.8.1</option><option value="1.8">1.8</option><option value="custom">Другая (введите вручную)</option>
                     </select>
-                    <input type="text" id="serverVersionCustom" placeholder="Введите версию вручную" style="margin-top:8px; display:none;" />
+                    <input type="text" id="serverVersionCustom" placeholder="Введите версию вручную" style="margin-top:8px;display:none;" />
                 </div>
-
                 <div class="form-group">
-                    <label>Описание</label>
-                    <textarea id="serverDescription" placeholder="Оставьте пустым для автозаполнения MOTD"></textarea>
+                    <label>Описание (до 150 символов)</label>
+                    <textarea id="serverDescription" placeholder="Оставьте пустым для автозаполнения MOTD" maxlength="150"></textarea>
+                    <div class="char-counter" id="descCounter">0/150</div>
                 </div>
-
                 <div class="form-group">
-                    <label>Теги (нажмите Enter после каждого тега)</label>
+                    <label>Теги (2-30 символов, макс. 10 тегов)</label>
                     <div class="tags-input-wrap">
-                        <input type="text" id="tagInput" placeholder="Например: PvP, SkyBlock, Выживание" />
+                        <input type="text" id="tagInput" placeholder="Например: PvP, SkyBlock, Выживание" maxlength="30" />
                         <button class="btn btn-outline btn-sm" id="addTagBtn">+ Добавить</button>
                     </div>
-                    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;" id="tagsContainer"></div>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;" id="tagsContainer"></div>
+                    <div class="char-counter" id="tagCounter">0/10 тегов</div>
                 </div>
-
                 <div class="form-group">
                     <label>Аватарка (загрузите с ПК)</label>
                     <div class="avatar-upload">
-                        <div class="avatar-preview" id="avatarPreview">
-                            <span class="placeholder"><i class="fas fa-image"></i></span>
-                        </div>
+                        <div class="avatar-preview" id="avatarPreview"><span><i class="fas fa-image"></i></span></div>
                         <div class="avatar-actions">
-                            <div class="file-input-wrap">
-                                <button class="btn btn-outline btn-sm"><i class="fas fa-upload"></i> Выбрать файл</button>
-                                <input type="file" id="avatarFileInput" accept="image/*" />
+                            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                                <div class="file-input-wrap" style="position:relative;overflow:hidden;display:inline-block;">
+                                    <button class="btn btn-outline btn-sm"><i class="fas fa-upload"></i> Выбрать файл</button>
+                                    <input type="file" id="avatarFileInput" accept="image/*" style="position:absolute;left:0;top:0;opacity:0;width:100%;height:100%;cursor:pointer;" />
+                                </div>
+                                <button class="btn btn-outline btn-sm" style="color:var(--danger-color);border-color:rgba(248,113,113,0.2);" id="clearAvatarBtn"><i class="fas fa-times"></i> Удалить</button>
                             </div>
-                            <span class="file-name" id="avatarFileName">Файл не выбран</span>
-                            <button class="btn btn-outline btn-sm" style="color: var(--danger-color); border-color: rgba(248,113,113,0.2);" id="clearAvatarBtn">
-                                <i class="fas fa-times"></i> Удалить
-                            </button>
+                            <span class="file-name" id="avatarFileName" style="display:block;margin-top:4px;">Файл не выбран</span>
                         </div>
                     </div>
                 </div>
-
                 <div class="form-actions">
                     <button class="btn btn-success" id="submitServerBtn"><i class="fas fa-check"></i> Добавить</button>
                     <button class="btn btn-outline" onclick="showPage('main')">Отмена</button>
                 </div>
             </div>
         </div>
-    </main>
-
+        <div class="page" id="page-stats">
+            <div class="stats-page">
+                <a class="back-link" onclick="showPage('main')"><i class="fas fa-arrow-left"></i> На главную</a>
+                <h2 id="statsServerName">Название сервера</h2>
+                <div class="stats-sub" id="statsServerAddr">IP: порт</div>
+                <div class="stats-detail">
+                    <div class="stat-item"><div class="label">Версия</div><div class="value" id="statsVersion">—</div></div>
+                    <div class="stat-item"><div class="label">Голосов</div><div class="value" id="statsVotes">0</div></div>
+                    <div class="stat-item"><div class="label">Онлайн сейчас</div><div class="value" id="statsOnline">0</div></div>
+                    <div class="stat-item"><div class="label">Максимум игроков</div><div class="value" id="statsMax">0</div></div>
+                </div>
+                <div style="margin-top:10px;"><strong>Описание:</strong> <span id="statsDescription">—</span></div>
+                <div style="margin-top:10px;"><strong>Теги:</strong> <span id="statsTags">—</span></div>
+                <div style="margin-top:20px;"><strong>График онлайна за последние 24 часа</strong></div>
+                <canvas id="statsChart"></canvas>
+            </div>
+        </div>
+        <div class="page" id="page-login">
+            <div style="margin-top:10px;margin-bottom:20px;"><button class="btn btn-back" onclick="showPage('main')"><i class="fas fa-arrow-left"></i> Назад</button></div>
+            <div class="auth-page">
+                <h2>Вход</h2>
+                <p class="auth-sub">Войдите в аккаунт, чтобы голосовать и добавлять сервера</p>
+                <div class="form-group"><label>Email</label><input type="email" id="loginEmail" placeholder="example@mail.com" /></div>
+                <div class="form-group"><label>Пароль</label><input type="password" id="loginPassword" placeholder="••••••••" /></div>
+                <button class="auth-btn" id="loginBtn">Войти</button>
+                <div class="auth-error" id="loginError"></div>
+                <div class="auth-links">Нет аккаунта? <a onclick="showPage('register')">Зарегистрироваться</a></div>
+                <a class="back-link" onclick="showPage('main')">← Вернуться на главную</a>
+            </div>
+        </div>
+        <div class="page" id="page-register">
+            <div style="margin-top:10px;margin-bottom:20px;"><button class="btn btn-back" onclick="showPage('main')"><i class="fas fa-arrow-left"></i> Назад</button></div>
+            <div class="auth-page">
+                <h2>Регистрация</h2>
+                <p class="auth-sub">Создайте аккаунт для доступа ко всем функциям</p>
+                <div class="form-group"><label>Email</label><input type="email" id="registerEmail" placeholder="example@mail.com" /></div>
+                <div class="form-group"><label>Пароль (минимум 6 символов)</label><input type="password" id="registerPassword" placeholder="••••••••" /></div>
+                <div class="form-group"><label>Повторите пароль</label><input type="password" id="registerPasswordConfirm" placeholder="••••••••" /></div>
+                <button class="auth-btn" id="registerBtn">Зарегистрироваться</button>
+                <div class="auth-error" id="registerError"></div>
+                <div class="auth-success" id="registerSuccess"></div>
+                <div class="auth-links">Уже есть аккаунт? <a onclick="showPage('login')">Войти</a></div>
+                <a class="back-link" onclick="showPage('main')">← Вернуться на главную</a>
+            </div>
+        </div>
+        <div class="page" id="page-verify">
+            <div style="margin-top:10px;margin-bottom:20px;"><button class="btn btn-back" onclick="showPage('main')"><i class="fas fa-arrow-left"></i> Назад</button></div>
+            <div class="verify-page">
+                <h2>Подтверждение почты</h2>
+                <p class="verify-sub" id="verifySubText">На вашу почту отправлен 6-значный код. Введите его ниже.</p>
+                <div class="form-group"><label>Код подтверждения</label><input type="text" id="verifyCode" placeholder="••••••" maxlength="6" /></div>
+                <button class="verify-btn" id="verifyBtn">Подтвердить</button>
+                <div class="verify-error" id="verifyError"></div>
+                <div class="verify-success" id="verifySuccess"></div>
+                <div class="resend-link">Не пришло письмо? <a id="resendVerifyLink">Отправить повторно</a></div>
+                <a class="back-link" onclick="showPage('main')">← Вернуться на главную</a>
+            </div>
+        </div>
+        <div class="page" id="page-contacts">
+            <div class="legal-page">
+                <a class="back-link" onclick="showPage('main')"><i class="fas fa-arrow-left"></i> На главную</a>
+                <h1>Контакты</h1>
+                <p>Свяжитесь с нами по любым вопросам:</p>
+                <ul><li><strong>Email:</strong> support@krezzmonitor.ru</li><li><strong>Telegram:</strong> @krezzmonitor</li><li><strong>Discord:</strong> https://discord.gg/krezzmonitor</li></ul>
+                <p>Мы стараемся отвечать в течение 24 часов в рабочие дни.</p>
+            </div>
+        </div>
+        <div class="page" id="page-rules">
+            <div class="legal-page">
+                <a class="back-link" onclick="showPage('main')"><i class="fas fa-arrow-left"></i> На главную</a>
+                <h1>Правила пользования сервисом KreZzMonitor</h1>
+                <p><strong>1. Общие положения</strong><br>1.1. Настоящие правила регулируют отношения между администрацией сайта KreZzMonitor и пользователями.<br>1.2. Используя сайт, вы соглашаетесь с данными правилами.</p>
+                <p><strong>2. Добавление серверов</strong><br>2.1. Добавлять можно только серверы Minecraft, принадлежащие вам или с разрешения владельца.<br>2.2. Запрещено добавлять серверы с незаконным контентом, читами, оскорбительными названиями.<br>2.3. Администрация оставляет за собой право удалять серверы без объяснения причин.</p>
+                <p><strong>3. Голосование</strong><br>3.1. Голосовать могут только зарегистрированные пользователи (в будущем).<br>3.2. Запрещены накрутки голосов с использованием ботов или прокси.</p>
+                <p><strong>4. Ответственность</strong><br>4.1. Администрация не несёт ответственности за контент серверов, добавленных пользователями.<br>4.2. Пользователь самостоятельно отвечает за сохранность своих данных.</p>
+                <p><strong>5. Изменения</strong><br>5.1. Правила могут быть изменены в любое время. Изменения вступают в силу с момента публикации.</p>
+            </div>
+        </div>
+        <div class="page" id="page-agreement">
+            <div class="legal-page">
+                <a class="back-link" onclick="showPage('main')"><i class="fas fa-arrow-left"></i> На главную</a>
+                <h1>Пользовательское соглашение</h1>
+                <p><strong>1. Предмет соглашения</strong><br>1.1. Настоящее соглашение регулирует использование сайта KreZzMonitor (далее – «Сайт»).<br>1.2. Использование Сайта означает полное и безоговорочное принятие условий.</p>
+                <p><strong>2. Права и обязанности сторон</strong><br>2.1. Пользователь обязуется предоставлять достоверную информацию о серверах.<br>2.2. Администрация обязуется обеспечивать работоспособность Сайта и защиту данных.</p>
+                <p><strong>3. Обработка персональных данных</strong><br>3.1. Сайт собирает только IP-адрес пользователя для предотвращения злоупотреблений.<br>3.2. Дополнительные данные (email, имя) могут запрашиваться только при регистрации.</p>
+                <p><strong>4. Интеллектуальная собственность</strong><br>4.1. Весь контент Сайта является собственностью администрации, если не указано иное.<br>4.2. Запрещено копирование элементов дизайна без разрешения.</p>
+                <p><strong>5. Заключительные положения</strong><br>5.1. Соглашение вступает в силу с момента начала использования Сайта.<br>5.2. Администрация вправе изменять соглашение без предварительного уведомления.</p>
+            </div>
+        </div>
+    </div>
+    <footer>
+        <div class="footer-container">
+            <div>&copy; KreZzMonitor. Все права защищены.</div>
+            <div class="footer-links">
+                <a onclick="showPage('contacts')">Контакты</a>
+                <a onclick="showPage('rules')">Правила</a>
+                <a onclick="showPage('agreement')">Соглашение</a>
+            </div>
+        </div>
+    </footer>
+    
     <script>
         // ============================================================
-        //  СПЛЕШ-ЭКРАН: скрыть через 2.5 секунды
+        // ПОЛНАЯ ВЕРСИЯ С ВСЕМИ ИСПРАВЛЕНИЯМИ
         // ============================================================
-        setTimeout(() => {
-            const splash = document.getElementById('splashScreen');
-            if (splash) {
-                splash.style.opacity = '0';
-                setTimeout(() => {
-                    splash.style.display = 'none';
-                }, 600);
-            }
-        }, 2500);
-
-        // ============================================================
-        //  КОНФИГ FIREBASE
-        // ============================================================
+        
+        // --- Firebase ---
         const firebaseConfig = {
             apiKey: "AIzaSyDhdICxEq951HtNtw2XUbJmPya8rcVDGHA",
             authDomain: "reherherherh.firebaseapp.com",
@@ -1013,48 +429,114 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-
+        const auth = firebase.auth();
+        
+        // --- EmailJS ---
+        emailjs.init("0Sq4eL0-lIGxToR47");
+        const EMAILJS_SERVICE = "service_2262rnd";
+        const EMAILJS_TEMPLATE = "template_kdy80p9";
+        
         // ============================================================
-        //  ПЕРЕКЛЮЧЕНИЕ СТРАНИЦ
+        // 1. ФУНКЦИИ БЕЗОПАСНОСТИ (НОВЫЕ)
         // ============================================================
-        function showPage(pageId) {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.getElementById('page-' + pageId).classList.add('active');
-            if (pageId === 'main') applyFiltersAndRender();
+        
+        // Защита от XSS
+        function escapeHtml(text) {
+            if (!text) return '';
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;',
+                '/': '&#x2F;',
+                '`': '&#x60;',
+                '=': '&#x3D;'
+            };
+            return String(text).replace(/[&<>"'/`=]/g, function(s) {
+                return map[s];
+            });
         }
-
-        // ============================================================
-        //  ТЕМА
-        // ============================================================
-        const themeToggle = document.getElementById('themeToggle');
-        const themeIcon = themeToggle.querySelector('i');
-
-        function setTheme(theme) {
-            if (theme === 'light') {
-                document.body.classList.add('light-theme');
-                themeIcon.className = 'fas fa-sun';
-                localStorage.setItem('theme', 'light');
-            } else {
-                document.body.classList.remove('light-theme');
-                themeIcon.className = 'fas fa-moon';
-                localStorage.setItem('theme', 'dark');
+        
+        // Валидация IP и домена
+        function isValidIPOrDomain(value) {
+            if (!value) return false;
+            const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+$/;
+            const ipRegex = /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+            return domainRegex.test(value) || ipRegex.test(value);
+        }
+        
+        // Валидация данных сервера
+        function validateServerData(data) {
+            const errors = [];
+            
+            if (!data.name || data.name.length < 3 || data.name.length > 50) {
+                errors.push('Название должно быть от 3 до 50 символов');
             }
+            
+            if (!data.address || !isValidIPOrDomain(data.address)) {
+                errors.push('Некорректный IP адрес или домен');
+            }
+            
+            if (data.port && (data.port < 1 || data.port > 65535)) {
+                errors.push('Порт должен быть от 1 до 65535');
+            }
+            
+            if (data.tags && data.tags.length > 10) {
+                errors.push('Максимум 10 тегов');
+            }
+            
+            if (data.tags) {
+                for (const tag of data.tags) {
+                    if (tag.length < 2 || tag.length > 30) {
+                        errors.push('Теги должны быть от 2 до 30 символов');
+                        break;
+                    }
+                }
+            }
+            
+            if (data.description && data.description.length > 150) {
+                errors.push('Описание не более 150 символов');
+            }
+            
+            // Проверка на опасные символы
+            const dangerous = /[<>"']/;
+            if (data.name && dangerous.test(data.name)) {
+                errors.push('Название содержит недопустимые символы');
+            }
+            
+            if (data.description && dangerous.test(data.description)) {
+                errors.push('Описание содержит недопустимые символы');
+            }
+            
+            return errors;
         }
-        const savedTheme = localStorage.getItem('theme') || 'dark';
-        setTheme(savedTheme);
-        themeToggle.addEventListener('click', () => {
-            const isLight = document.body.classList.contains('light-theme');
-            setTheme(isLight ? 'dark' : 'light');
-        });
-
+        
         // ============================================================
-        //  ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+        // 2. ОСТАЛЬНЫЕ ПЕРЕМЕННЫЕ И ФУНКЦИИ (БЕЗ ИЗМЕНЕНИЙ)
         // ============================================================
+        
+        let pendingVerifyEmail = null;
+        let pendingVerifyUid = null;
+        let verificationCode = null;
+        let currentUser = null;
         let servers = [];
         let tags = [];
         let unsubscribe = null;
         let avatarDataURL = null;
-
+        let currentPage = 1;
+        const PER_PAGE = 8;
+        let votedServers = {};
+        let votingCooldown = false;
+        let currentStatsServerId = null;
+        let statsUnsubscribe = null;
+        let activeVersionFilter = 'all';
+        const MAX_TAGS = 10;
+        let correctAnswer = 0;
+        
+        // --- DOM элементы ---
+        const serversContainer = document.getElementById('serversContainer');
+        const paginationEl = document.getElementById('pagination');
         const serverName = document.getElementById('serverName');
         const serverIP = document.getElementById('serverIP');
         const serverPort = document.getElementById('serverPort');
@@ -1069,98 +551,451 @@
         const avatarPreview = document.getElementById('avatarPreview');
         const clearAvatarBtn = document.getElementById('clearAvatarBtn');
         const submitBtn = document.getElementById('submitServerBtn');
-
-        const searchInput = document.getElementById('searchInput');
-        const versionFilterSelect = document.getElementById('versionFilter');
-        const sortFilterSelect = document.getElementById('sortFilter');
-        const resetFiltersBtn = document.getElementById('resetFilters');
-
-        // ============================================================
-        //  ПОЛУЧЕНИЕ IP ПОЛЬЗОВАТЕЛЯ (для лимита)
-        // ============================================================
-        async function getClientIp() {
-            try {
-                const response = await fetch('https://api.ipify.org?format=json');
-                const data = await response.json();
-                return data.ip;
-            } catch (e) {
-                console.warn('Не удалось получить IP:', e);
-                return null;
+        const nameCounter = document.getElementById('nameCounter');
+        const descCounter = document.getElementById('descCounter');
+        const tagCounter = document.getElementById('tagCounter');
+        
+        // --- Функции UI ---
+        function updateUIForUser(user) {
+            const a = document.getElementById('authButtons');
+            const b = document.getElementById('userInfo');
+            const c = document.getElementById('userNameText');
+            const d = document.getElementById('userAvatar');
+            if (user) {
+                currentUser = user;
+                a.style.display = 'none';
+                b.style.display = 'flex';
+                c.textContent = user.displayName || user.email || 'Пользователь';
+                d.src = user.photoURL || 'https://ui-avatars.com/api/?name=' + (user.displayName || user.email || 'User') + '&background=2980b9&color=fff';
+            } else {
+                currentUser = null;
+                a.style.display = 'flex';
+                b.style.display = 'none';
             }
         }
-
-        // ============================================================
-        //  ЛОГИКА ПОЛЯ ВЕРСИИ
-        // ============================================================
-        serverVersionSelect.addEventListener('change', function() {
-            if (this.value === 'custom') {
-                serverVersionCustom.style.display = 'block';
-                serverVersionCustom.required = true;
-            } else {
-                serverVersionCustom.style.display = 'none';
-                serverVersionCustom.required = false;
-                serverVersionCustom.value = '';
+        
+        auth.onAuthStateChanged(user => updateUIForUser(user));
+        
+        function generateVerificationCode() {
+            return Math.floor(100000 + Math.random() * 900000).toString();
+        }
+        
+        async function sendVerificationEmail(email, code) {
+            try {
+                await emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, { email, code });
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+        
+        async function isUserVerified(uid) {
+            try {
+                const d = await db.collection('users').doc(uid).get();
+                return d.exists && d.data().verified === true;
+            } catch (e) {
+                return false;
+            }
+        }
+        
+        async function setUserVerified(uid) {
+            try {
+                await db.collection('users').doc(uid).set({ verified: true }, { merge: true });
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+        
+        function showVerifyPage(email, uid) {
+            pendingVerifyEmail = email;
+            pendingVerifyUid = uid;
+            verificationCode = generateVerificationCode();
+            document.getElementById('verifySubText').textContent = 'На вашу почту ' + email + ' отправлен 6-значный код. Введите его ниже.';
+            document.getElementById('verifyError').textContent = '';
+            document.getElementById('verifySuccess').textContent = '';
+            document.getElementById('verifyCode').value = '';
+            showPage('verify');
+            sendVerificationEmail(email, verificationCode).then(s => {
+                if (!s) document.getElementById('verifyError').textContent = '❌ Не удалось отправить письмо. Попробуйте повторно.';
+            });
+        }
+        
+        document.getElementById('verifyBtn').addEventListener('click', async function() {
+            const code = document.getElementById('verifyCode').value.trim();
+            const err = document.getElementById('verifyError');
+            const succ = document.getElementById('verifySuccess');
+            err.textContent = '';
+            succ.textContent = '';
+            if (!code || code.length !== 6) {
+                err.textContent = '❌ Введите 6-значный код';
+                return;
+            }
+            if (code !== verificationCode) {
+                err.textContent = '❌ Неверный код. Попробуйте ещё раз.';
+                return;
+            }
+            this.disabled = true;
+            this.textContent = '⏳ Проверка...';
+            try {
+                if (await setUserVerified(pendingVerifyUid)) {
+                    succ.textContent = '✅ Почта подтверждена! Теперь вы можете войти.';
+                    await auth.signOut();
+                    setTimeout(() => {
+                        showPage('login');
+                        document.getElementById('loginEmail').value = pendingVerifyEmail || '';
+                        document.getElementById('verifyCode').value = '';
+                        pendingVerifyEmail = null;
+                        pendingVerifyUid = null;
+                        verificationCode = null;
+                    }, 1500);
+                } else {
+                    err.textContent = '❌ Ошибка сохранения статуса. Попробуйте позже.';
+                }
+            } catch (e) {
+                err.textContent = '❌ Ошибка: ' + e.message;
+            } finally {
+                this.disabled = false;
+                this.textContent = 'Подтвердить';
             }
         });
-
-        // ============================================================
-        //  ТЕГИ
-        // ============================================================
-        function renderTags() {
-            tagsContainer.innerHTML = tags.map(tag =>
-                `<span class="tag-item">
-                    ${tag}
-                    <span class="remove-tag" data-tag="${tag}"><i class="fas fa-times"></i></span>
-                </span>`
-            ).join('');
-            document.querySelectorAll('#tagsContainer .remove-tag').forEach(el => {
-                el.addEventListener('click', function() {
-                    const tag = this.dataset.tag;
-                    tags = tags.filter(t => t !== tag);
-                    renderTags();
+        
+        document.getElementById('resendVerifyLink').addEventListener('click', async function(e) {
+            e.preventDefault();
+            const err = document.getElementById('verifyError');
+            const succ = document.getElementById('verifySuccess');
+            err.textContent = '';
+            succ.textContent = '';
+            if (!pendingVerifyEmail) {
+                err.textContent = '❌ Нет активной сессии подтверждения.';
+                return;
+            }
+            verificationCode = generateVerificationCode();
+            const ok = await sendVerificationEmail(pendingVerifyEmail, verificationCode);
+            ok ? succ.textContent = '✅ Новый код отправлен на почту!' : err.textContent = '❌ Не удалось отправить письмо. Попробуйте позже.';
+        });
+        
+        document.getElementById('registerBtn').addEventListener('click', async function() {
+            const email = document.getElementById('registerEmail').value.trim();
+            const pass = document.getElementById('registerPassword').value;
+            const conf = document.getElementById('registerPasswordConfirm').value;
+            const err = document.getElementById('registerError');
+            const succ = document.getElementById('registerSuccess');
+            err.textContent = '';
+            succ.textContent = '';
+            if (!email || !pass || !conf) {
+                err.textContent = '❌ Заполните все поля';
+                return;
+            }
+            if (pass.length < 6) {
+                err.textContent = '❌ Пароль должен быть минимум 6 символов';
+                return;
+            }
+            if (pass !== conf) {
+                err.textContent = '❌ Пароли не совпадают';
+                return;
+            }
+            this.disabled = true;
+            this.textContent = '⏳ Регистрация...';
+            try {
+                const user = await auth.createUserWithEmailAndPassword(email, pass);
+                succ.textContent = '✅ Аккаунт создан! Подтвердите почту.';
+                await auth.signOut();
+                showVerifyPage(email, user.user.uid);
+            } catch (e) {
+                let msg = '❌ Ошибка регистрации: ';
+                switch (e.code) {
+                    case 'auth/email-already-in-use':
+                        msg += 'Этот email уже используется';
+                        break;
+                    case 'auth/invalid-email':
+                        msg += 'Некорректный email';
+                        break;
+                    case 'auth/weak-password':
+                        msg += 'Слишком слабый пароль';
+                        break;
+                    default:
+                        msg += e.message;
+                }
+                err.textContent = msg;
+            } finally {
+                this.disabled = false;
+                this.textContent = 'Зарегистрироваться';
+            }
+        });
+        
+        document.getElementById('loginBtn').addEventListener('click', async function() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const pass = document.getElementById('loginPassword').value;
+            const err = document.getElementById('loginError');
+            err.textContent = '';
+            if (!email || !pass) {
+                err.textContent = '❌ Заполните все поля';
+                return;
+            }
+            this.disabled = true;
+            this.textContent = '⏳ Вход...';
+            try {
+                const user = await auth.signInWithEmailAndPassword(email, pass);
+                if (!await isUserVerified(user.user.uid)) {
+                    await auth.signOut();
+                    err.textContent = '❌ Почта не подтверждена. Проверьте почту или запросите код повторно.';
+                    showVerifyPage(email, user.user.uid);
+                    this.disabled = false;
+                    this.textContent = 'Войти';
+                    return;
+                }
+                updateUIForUser(user.user);
+                setTimeout(() => showPage('main'), 500);
+            } catch (e) {
+                let msg = '❌ Ошибка входа: ';
+                switch (e.code) {
+                    case 'auth/user-not-found':
+                        msg += 'Пользователь не найден';
+                        break;
+                    case 'auth/wrong-password':
+                        msg += 'Неверный пароль';
+                        break;
+                    case 'auth/invalid-email':
+                        msg += 'Некорректный email';
+                        break;
+                    case 'auth/user-disabled':
+                        msg += 'Аккаунт заблокирован';
+                        break;
+                    default:
+                        msg += e.message;
+                }
+                err.textContent = msg;
+            } finally {
+                this.disabled = false;
+                this.textContent = 'Войти';
+            }
+        });
+        
+        function logoutUser() {
+            auth.signOut().then(() => {
+                updateUIForUser(null);
+                showPage('main');
+            });
+        }
+        
+        function showPage(id) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            const page = document.getElementById('page-' + id);
+            if (page) page.classList.add('active');
+            if (id === 'main') {
+                applyFiltersAndRender();
+                generateVersionTags();
+            }
+            if (id === 'add') {
+                generateCaptcha();
+                const captchaInput = document.getElementById('captchaInput');
+                if (captchaInput) captchaInput.value = '';
+            }
+            if (id === 'stats' && currentStatsServerId) loadServerStats(currentStatsServerId);
+            if (id === 'login' || id === 'register') {
+                document.getElementById('loginError').textContent = '';
+                document.getElementById('registerError').textContent = '';
+                document.getElementById('registerSuccess').textContent = '';
+            }
+        }
+        
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = themeToggle.querySelector('i');
+        
+        function setTheme(t) {
+            if (t === 'dark') {
+                document.body.classList.add('dark-theme');
+                themeIcon.className = 'fas fa-sun';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                document.body.classList.remove('dark-theme');
+                themeIcon.className = 'fas fa-moon';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+        setTheme(localStorage.getItem('theme') || 'light');
+        themeToggle.addEventListener('click', () => {
+            setTheme(document.body.classList.contains('dark-theme') ? 'light' : 'dark');
+        });
+        
+        setTimeout(() => {
+            const s = document.getElementById('splashScreen');
+            if (s) {
+                s.style.opacity = '0';
+                setTimeout(() => { s.style.display = 'none'; }, 600);
+            }
+        }, 2000);
+        
+        function generateCaptcha() {
+            const a = Math.floor(Math.random() * 10) + 1;
+            const b = Math.floor(Math.random() * 10) + 1;
+            correctAnswer = a + b;
+            const el = document.querySelector('.captcha-question');
+            if (el) el.textContent = a + ' + ' + b + ' = ?';
+        }
+        
+        // Добавляем капчу если её нет
+        if (!document.querySelector('.captcha-question')) {
+            const captchaGroup = document.createElement('div');
+            captchaGroup.className = 'form-group';
+            captchaGroup.innerHTML = '<label>Подтверждение (капча)</label><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;"><span class="captcha-question" style="font-size:18px;font-weight:600;background:var(--bg-input);padding:6px 14px;border-radius:40px;">5 + 3 = ?</span><input type="number" id="captchaInput" placeholder="Ответ" style="width:100px;flex:0 1 auto;" /></div>';
+            const formActions = document.querySelector('.add-form-page .form-actions');
+            if (formActions) formActions.parentNode.insertBefore(captchaGroup, formActions);
+            generateCaptcha();
+        }
+        
+        function loadVotedServers() {
+            const d = localStorage.getItem('votedServers');
+            if (d) {
+                try {
+                    const p = JSON.parse(d);
+                    if (Array.isArray(p)) {
+                        const o = {};
+                        p.forEach(id => { o[id] = 1; });
+                        votedServers = o;
+                        saveVotedServers();
+                    } else votedServers = p;
+                } catch (e) { votedServers = {}; }
+            } else votedServers = {};
+        }
+        
+        function saveVotedServers() {
+            localStorage.setItem('votedServers', JSON.stringify(votedServers));
+        }
+        
+        function getVoteDirection(id) {
+            return votedServers[id] || 0;
+        }
+        
+        function setVoteDirection(id, d) {
+            if (d === 0) delete votedServers[id];
+            else votedServers[id] = d;
+            saveVotedServers();
+        }
+        
+        function showCopyNotification() {
+            const el = document.getElementById('copyNotification');
+            el.classList.add('show');
+            clearTimeout(el._timeout);
+            el._timeout = setTimeout(() => { el.classList.remove('show'); }, 2000);
+        }
+        
+        function copyToClipboard(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => showCopyNotification());
+            } else {
+                // fallback
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showCopyNotification();
+            }
+        }
+        
+        function timeAgo(ts) {
+            if (!ts) return 'неизвестно';
+            const s = Math.floor((Date.now() - ts.seconds * 1000) / 1000);
+            if (s < 0) return 'только что';
+            const m = Math.floor(s / 60);
+            const h = Math.floor(m / 60);
+            const d = Math.floor(h / 24);
+            const mo = Math.floor(d / 30);
+            const y = Math.floor(d / 365);
+            if (y > 0) return y + ' ' + getWord(y, 'год', 'года', 'лет') + ' назад';
+            if (mo > 0) return mo + ' ' + getWord(mo, 'месяц', 'месяца', 'месяцев') + ' назад';
+            if (d > 0) return d + ' ' + getWord(d, 'день', 'дня', 'дней') + ' назад';
+            if (h > 0) return h + ' ' + getWord(h, 'час', 'часа', 'часов') + ' назад';
+            if (m > 0) return m + ' ' + getWord(m, 'минуту', 'минуты', 'минут') + ' назад';
+            return 'только что';
+        }
+        
+        function getWord(n, o, t, m) {
+            const n10 = n % 10;
+            const n100 = n % 100;
+            if (n100 >= 11 && n100 <= 19) return m;
+            if (n10 === 1) return o;
+            if (n10 >= 2 && n10 <= 4) return t;
+            return m;
+        }
+        
+        const allVersions = ['1.21', '1.20.6', '1.20.4', '1.20.2', '1.20.1', '1.20', '1.19.4', '1.19.3', '1.19.2', '1.19', '1.18.2', '1.18.1', '1.18', '1.17.1', '1.17', '1.16.5', '1.16.4', '1.16.3', '1.16.2', '1.16.1', '1.16', '1.15.2', '1.15.1', '1.15', '1.14.4', '1.14.3', '1.14.2', '1.14.1', '1.14', '1.13.2', '1.13.1', '1.13', '1.12.2', '1.12.1', '1.12', '1.11.2', '1.11.1', '1.11', '1.10.2', '1.10.1', '1.10', '1.9.4', '1.9.3', '1.9.2', '1.9.1', '1.9', '1.8.9', '1.8.8', '1.8.7', '1.8.6', '1.8.5', '1.8.4', '1.8.3', '1.8.2', '1.8.1', '1.8', '1.7.10', '1.7.9', '1.7.2', '1.6.4', '1.5.2'];
+        
+        function generateVersionTags() {
+            const box = document.getElementById('versionBox');
+            let html = '<a class="v-tag all-versions ' + (activeVersionFilter === 'all' ? 'active-version' : '') + '" data-version="all">Все версии</a>';
+            allVersions.forEach(v => {
+                html += '<a class="v-tag ' + (activeVersionFilter === v ? 'active-version' : '') + '" data-version="' + v + '">' + v + '</a>';
+            });
+            box.innerHTML = html;
+            box.querySelectorAll('.v-tag').forEach(el => {
+                el.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    activeVersionFilter = this.dataset.version;
+                    currentPage = 1;
+                    generateVersionTags();
+                    applyFiltersAndRender();
                 });
             });
         }
-
+        
+        function renderTags() {
+            tagsContainer.innerHTML = tags.map(t => '<span class="tag-item">' + escapeHtml(t) + '<span class="remove-tag" data-tag="' + escapeHtml(t) + '"><i class="fas fa-times"></i></span></span>').join('');
+            document.querySelectorAll('#tagsContainer .remove-tag').forEach(el => {
+                el.addEventListener('click', function() {
+                    const t = this.dataset.tag;
+                    tags = tags.filter(tt => tt !== t);
+                    renderTags();
+                    updateTagCounter();
+                });
+            });
+            updateTagCounter();
+        }
+        
+        function updateTagCounter() {
+            tagCounter.textContent = tags.length + '/' + MAX_TAGS + ' тегов';
+            tagCounter.className = 'char-counter' + (tags.length >= MAX_TAGS ? ' over' : '');
+        }
+        
         addTagBtn.addEventListener('click', function() {
             const val = tagInput.value.trim();
-            if (val && !tags.includes(val)) {
-                tags.push(val);
-                renderTags();
-                tagInput.value = '';
-            }
+            if (!val) { alert('Введите тег'); return; }
+            if (val.length < 2) { alert('Тег должен быть минимум 2 символа'); return; }
+            if (val.length > 30) { alert('Тег не может быть длиннее 30 символов'); return; }
+            if (tags.includes(val)) { alert('Такой тег уже добавлен'); return; }
+            if (tags.length >= MAX_TAGS) { alert('Максимум ' + MAX_TAGS + ' тегов'); return; }
+            tags.push(val);
+            renderTags();
+            tagInput.value = '';
         });
-
+        
         tagInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                addTagBtn.click();
-            }
+            if (e.key === 'Enter') { e.preventDefault();
+                addTagBtn.click(); }
         });
-
-        // ============================================================
-        //  АВАТАР
-        // ============================================================
-        function resizeAndConvertToBase64(file, maxWidth = 200, maxHeight = 200) {
+        
+        function resizeAndConvertToBase64(file, mw = 200, mh = 200) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const img = new Image();
                     img.onload = function() {
-                        let width = img.width,
-                            height = img.height;
-                        if (width > maxWidth || height > maxHeight) {
-                            const ratio = Math.min(maxWidth / width, maxHeight / height);
-                            width = Math.round(width * ratio);
-                            height = Math.round(height * ratio);
+                        let w = img.width;
+                        let h = img.height;
+                        if (w > mw || h > mh) {
+                            const r = Math.min(mw / w, mh / h);
+                            w = Math.round(w * r);
+                            h = Math.round(h * r);
                         }
-                        const canvas = document.createElement('canvas');
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-                        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                        resolve(dataUrl);
+                        const c = document.createElement('canvas');
+                        c.width = w;
+                        c.height = h;
+                        const ctx = c.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+                        resolve(c.toDataURL('image/jpeg', 0.8));
                     };
                     img.onerror = reject;
                     img.src = e.target.result;
@@ -1169,139 +1004,208 @@
                 reader.readAsDataURL(file);
             });
         }
-
+        
         avatarFileInput.addEventListener('change', async function() {
             const file = this.files[0];
             if (!file) return;
             avatarFileName.textContent = file.name;
             try {
-                const dataUrl = await resizeAndConvertToBase64(file);
-                avatarDataURL = dataUrl;
-                avatarPreview.innerHTML = `<img src="${dataUrl}" alt="avatar" />`;
-            } catch (e) {
-                console.error('Ошибка обработки картинки:', e);
-                alert('Не удалось обработать файл');
-            }
+                avatarDataURL = await resizeAndConvertToBase64(file);
+                avatarPreview.innerHTML = '<img src="' + avatarDataURL + '" alt="avatar" />';
+            } catch (e) { alert('Не удалось обработать файл'); }
         });
-
+        
         clearAvatarBtn.addEventListener('click', function() {
             avatarFileInput.value = '';
             avatarFileName.textContent = 'Файл не выбран';
             avatarDataURL = null;
-            avatarPreview.innerHTML = `<span class="placeholder"><i class="fas fa-image"></i></span>`;
+            avatarPreview.innerHTML = '<span><i class="fas fa-image"></i></span>';
         });
-
-        // ============================================================
-        //  ПОЛУЧЕНИЕ СТАТУСА (MCSRVSTAT)
-        // ============================================================
+        
         async function fetchServerStatus(address, port) {
-            const url = `https://api.mcsrvstat.us/3/${address}:${port}`;
             try {
-                const response = await fetch(url);
-                if (!response.ok) return null;
-                return await response.json();
-            } catch (e) {
-                return null;
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 10000);
+                const r = await fetch('https://api.mcsrvstat.us/3/' + address + ':' + port, {
+                    signal: controller.signal
+                });
+                clearTimeout(timeout);
+                if (!r.ok) return null;
+                return await r.json();
+            } catch (e) { return null; }
+        }
+        
+        async function getClientIp() {
+            try {
+                const r = await fetch('https://api.ipify.org?format=json');
+                const d = await r.json();
+                return d.ip;
+            } catch (e) { return null; }
+        }
+        
+        async function updateServerStatus(server) {
+            if (!server || !server.id) return;
+            const status = await fetchServerStatus(server.address, server.port);
+            const online = (status && status.online) ? (status.players ? status.players.online : 0) : 0;
+            let history = server.history || {};
+            const now = new Date();
+            const cutoff = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+            for (let key in history) {
+                const d = new Date(key);
+                if (d < cutoff) delete history[key];
+            }
+            const hourKey = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours()).toISOString();
+            history[hourKey] = online;
+            try {
+                await db.collection('servers').doc(server.id).update({
+                    statusData: status,
+                    statusUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    history: history
+                });
+            } catch (e) {}
+        }
+        
+        async function autoDeleteOfflineServers() {
+            const now = Date.now();
+            const tm = 20 * 60 * 1000;
+            for (const s of servers) {
+                if (s.statusData && s.statusData.online === false && s.statusUpdatedAt) {
+                    const updatedAt = s.statusUpdatedAt.seconds * 1000;
+                    if (now - updatedAt > tm) {
+                        try { await db.collection('servers').doc(s.id).delete(); } catch (e) {}
+                    }
+                }
             }
         }
-
+        
         // ============================================================
-        //  ОТПРАВКА ФОРМЫ С ПРОВЕРКОЙ IP И СТАТУСА
+        // 3. ОБНОВЛЕННАЯ ФУНКЦИЯ ДОБАВЛЕНИЯ (С ВАЛИДАЦИЕЙ)
         // ============================================================
+        
         async function addServerToFirestore() {
+            const captchaInput = document.getElementById('captchaInput');
+            if (!captchaInput) {
+                alert('Ошибка: капча не найдена');
+                return;
+            }
+            
+            const userAnswer = parseInt(captchaInput.value);
+            if (isNaN(userAnswer) || userAnswer !== correctAnswer) {
+                alert('❌ Неверный ответ на капчу. Попробуйте ещё раз.');
+                generateCaptcha();
+                return;
+            }
+            
             const name = serverName.value.trim();
             const ip = serverIP.value.trim();
             const port = parseInt(serverPort.value) || 25565;
-
-            if (!name || !ip) {
-                alert('Заполните название и IP адрес!');
+            const desc = serverDescription.value.trim();
+            
+            // === ВАЛИДАЦИЯ ===
+            const errors = validateServerData({
+                name, address: ip, port, tags, description: desc
+            });
+            
+            if (errors.length > 0) {
+                alert('❌ ' + errors.join('\n'));
                 return;
             }
-
-            // 1. Получаем IP пользователя
-            const userIp = await getClientIp();
-            if (!userIp) {
-                alert('Не удалось определить ваш IP-адрес. Попробуйте позже.');
+            
+            // Проверка существования сервера
+            const exists = servers.some(s => 
+                s.address.toLowerCase() === ip.toLowerCase() && 
+                s.port === port
+            );
+            
+            if (exists) {
+                alert('❌ Сервер с таким IP и портом уже существует!');
                 return;
             }
-
-            // 2. Проверяем, не добавлял ли этот IP сервер за последние 24 часа
-            const dayAgo = new Date();
-            dayAgo.setHours(dayAgo.getHours() - 24);
-
-            const checkQuery = await db.collection('servers')
-                .where('addedByIp', '==', userIp)
-                .where('createdAt', '>=', dayAgo)
-                .get();
-
-            if (!checkQuery.empty) {
-                alert('❌ С вашего IP-адреса уже был добавлен сервер за последние 24 часа. Попробуйте завтра.');
-                return;
-            }
-
-            // 3. Проверяем онлайн-статус сервера
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Проверка...';
-            const status = await fetchServerStatus(ip, port);
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="fas fa-check"></i> Добавить';
-
-            if (!status || status.online !== true) {
-                alert('❌ Сервер не найден или выключен. Убедитесь, что IP и порт указаны верно.');
-                return;
-            }
-
-            // 4. Автозаполнение версии и описания
-            let version = '';
-            const selectedVersion = serverVersionSelect.value;
-            if (selectedVersion === 'auto') {
-                version = status.version || '';
-            } else if (selectedVersion === 'custom') {
-                version = serverVersionCustom.value.trim();
-                if (!version) {
-                    alert('Пожалуйста, введите версию вручную.');
+            
+            // Проверка лимита
+            if (currentUser) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                const userServersQuery = await db.collection('servers')
+                    .where('addedByUserId', '==', currentUser.uid)
+                    .get();
+                
+                let todayCount = 0;
+                userServersQuery.forEach(doc => {
+                    const data = doc.data();
+                    if (data.createdAt && data.createdAt.toDate() > today) {
+                        todayCount++;
+                    }
+                });
+                
+                const MAX_SERVERS_PER_DAY = 9;
+                if (todayCount >= MAX_SERVERS_PER_DAY) {
+                    alert(`❌ Вы уже добавили ${MAX_SERVERS_PER_DAY} серверов сегодня. Лимит: ${MAX_SERVERS_PER_DAY} сервера в сутки.`);
                     return;
                 }
-            } else {
-                version = selectedVersion;
             }
-
-            let description = serverDescription.value.trim();
-            if (!description && status.motd) {
-                if (Array.isArray(status.motd)) {
-                    description = status.motd.join('\n');
-                } else if (typeof status.motd === 'string') {
-                    description = status.motd;
-                } else if (typeof status.motd === 'object' && status.motd.clean) {
-                    description = status.motd.clean;
-                }
-            }
-
-            // 5. Проверка дубликата IP+порт
-            if (servers.some(s => s.address.toLowerCase() === ip.toLowerCase() && s.port === port)) {
-                alert('Сервер с таким IP и портом уже существует!');
-                return;
-            }
-
-            const avatar = avatarDataURL || null;
-
-            const newServer = {
-                name,
-                address: ip,
-                port,
-                version,
-                description,
-                tags: tags.slice(),
-                avatarUrl: avatar,
-                votes: 0,
-                statusData: status,
-                addedByIp: userIp,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            };
-
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ Проверка...';
+            
             try {
+                const status = await fetchServerStatus(ip, port);
+                
+                if (!status || status.online !== true) {
+                    alert('❌ Сервер не найден или выключен.');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-check"></i> Добавить';
+                    return;
+                }
+                
+                let version = '';
+                const sel = serverVersionSelect.value;
+                if (sel === 'auto') {
+                    version = status.version || '';
+                } else if (sel === 'custom') {
+                    version = serverVersionCustom.value.trim();
+                    if (!version) {
+                        alert('Введите версию вручную.');
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="fas fa-check"></i> Добавить';
+                        return;
+                    }
+                } else {
+                    version = sel;
+                }
+                
+                let description = desc;
+                if (!description && status.motd) {
+                    if (Array.isArray(status.motd)) {
+                        description = status.motd.join('\n');
+                    } else if (typeof status.motd === 'string') {
+                        description = status.motd;
+                    } else if (typeof status.motd === 'object' && status.motd.clean) {
+                        description = status.motd.clean;
+                    }
+                }
+                
+                // Создаем объект сервера
+                const newServer = {
+                    name: name.substring(0, 50),
+                    address: ip,
+                    port: port,
+                    version: version.substring(0, 50),
+                    description: description ? description.substring(0, 150) : '',
+                    tags: tags.slice(0, 10),
+                    avatarUrl: avatarDataURL || null,
+                    votes: 0,
+                    statusData: status,
+                    statusUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    addedByUserId: currentUser ? currentUser.uid : null,
+                    addedByUserEmail: currentUser ? currentUser.email : null
+                };
+                
+                // Добавляем в Firestore
                 await db.collection('servers').add(newServer);
-                console.log('✅ Сервер успешно добавлен!');
+                
                 // Очистка формы
                 serverName.value = '';
                 serverIP.value = '';
@@ -1315,239 +1219,462 @@
                 avatarFileInput.value = '';
                 avatarFileName.textContent = 'Файл не выбран';
                 avatarDataURL = null;
-                avatarPreview.innerHTML = `<span class="placeholder"><i class="fas fa-image"></i></span>`;
+                avatarPreview.innerHTML = '<span><i class="fas fa-image"></i></span>';
+                generateCaptcha();
+                
+                alert('✅ Сервер успешно добавлен!');
                 showPage('main');
+                
             } catch (e) {
-                console.error('❌ Ошибка добавления:', e);
-                alert('Не удалось добавить сервер: ' + e.message);
+                console.error('Ошибка добавления:', e);
+                alert('❌ Не удалось добавить сервер: ' + e.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-check"></i> Добавить';
             }
         }
-
+        
         submitBtn.addEventListener('click', addServerToFirestore);
-
+        
+        serverName.addEventListener('input', function() {
+            const len = this.value.length;
+            nameCounter.textContent = len + '/50';
+            nameCounter.className = 'char-counter' + (len > 50 ? ' over' : '');
+        });
+        
+        serverDescription.addEventListener('input', function() {
+            const len = this.value.length;
+            descCounter.textContent = len + '/150';
+            descCounter.className = 'char-counter' + (len > 150 ? ' over' : '');
+        });
+        
         // ============================================================
-        //  ОБНОВЛЕНИЕ СТАТУСА СУЩЕСТВУЮЩИХ СЕРВЕРОВ
+        // 4. ЗАГРУЗКА И ОТОБРАЖЕНИЕ СЕРВЕРОВ (С ЭКРАНИРОВАНИЕМ)
         // ============================================================
-        async function updateServerStatus(server) {
-            if (!server || !server.id) return;
-            const status = await fetchServerStatus(server.address, server.port);
-            try {
-                await db.collection('servers').doc(server.id).update({
-                    statusData: status
-                });
-            } catch (e) {
-                console.error(`Ошибка обновления ${server.address}:`, e);
-            }
-        }
-
-        // ============================================================
-        //  ПОДПИСКА НА FIRESTORE
-        // ============================================================
+        
         function loadServers() {
             if (unsubscribe) unsubscribe();
-            unsubscribe = db.collection('servers')
-                .onSnapshot(async (snapshot) => {
-                    const temp = [];
-                    snapshot.forEach(doc => {
-                        const data = doc.data();
-                        temp.push({
-                            id: doc.id,
-                            ...data,
-                            port: data.port || 25565,
-                            statusData: data.statusData || null,
-                            createdAt: data.createdAt || null
-                        });
+            unsubscribe = db.collection('servers').onSnapshot(async (snapshot) => {
+                const temp = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    temp.push({
+                        id: doc.id,
+                        ...data,
+                        port: data.port || 25565,
+                        statusData: data.statusData || null,
+                        statusUpdatedAt: data.statusUpdatedAt || null,
+                        createdAt: data.createdAt || null,
+                        history: data.history || {}
                     });
-                    temp.sort((a, b) => {
-                        if (a.createdAt && b.createdAt) {
-                            return b.createdAt.seconds - a.createdAt.seconds;
-                        }
-                        return 0;
-                    });
-                    servers = temp;
-                    serverCountSpan.textContent = `(${servers.length})`;
-                    servers.forEach(server => {
-                        if (!server.statusData) updateServerStatus(server);
-                    });
-                    updateVersionFilter();
-                    applyFiltersAndRender();
-                }, (error) => {
-                    console.error('Ошибка подписки Firestore:', error);
-                    serversGrid.innerHTML =
-                        `<div class="no-results"><i class="fas fa-exclamation-triangle"></i> Ошибка: ${error.message}</div>`;
                 });
-        }
-
-        const serversGrid = document.getElementById('serversGrid');
-        const serverCountSpan = document.getElementById('serverCount');
-
-        // ============================================================
-        //  ФИЛЬТРЫ И ОТРИСОВКА
-        // ============================================================
-        function updateVersionFilter() {
-            const versions = new Set();
-            servers.forEach(s => {
-                if (s.version && s.version.trim()) versions.add(s.version.trim());
-            });
-            const currentVal = versionFilterSelect.value;
-            versionFilterSelect.innerHTML = `<option value="all">Все версии</option>`;
-            versions.forEach(v => {
-                const opt = document.createElement('option');
-                opt.value = v;
-                opt.textContent = v;
-                versionFilterSelect.appendChild(opt);
-            });
-            if (currentVal && versions.has(currentVal)) {
-                versionFilterSelect.value = currentVal;
-            } else {
-                versionFilterSelect.value = 'all';
-            }
-        }
-
-        function applyFiltersAndRender() {
-            const search = searchInput.value.trim().toLowerCase();
-            const version = versionFilterSelect.value;
-            const sort = sortFilterSelect.value;
-
-            let filtered = servers.filter(s => {
-                const nameMatch = s.name && s.name.toLowerCase().includes(search);
-                const versionMatch = version === 'all' || (s.version && s.version === version);
-                return nameMatch && versionMatch;
-            });
-
-            if (sort === 'online') {
-                filtered.sort((a, b) => {
-                    const aOnline = a.statusData && a.statusData.online === true;
-                    const bOnline = b.statusData && b.statusData.online === true;
-                    if (aOnline && !bOnline) return -1;
-                    if (!aOnline && bOnline) return 1;
-                    return (b.votes || 0) - (a.votes || 0);
-                });
-            } else if (sort === 'players') {
-                filtered.sort((a, b) => {
-                    const aPlayers = a.statusData && a.statusData.players ? a.statusData.players.online : 0;
-                    const bPlayers = b.statusData && b.statusData.players ? b.statusData.players.online : 0;
-                    return bPlayers - aPlayers;
-                });
-            } else if (sort === 'votes') {
-                filtered.sort((a, b) => (b.votes || 0) - (a.votes || 0));
-            } else if (sort === 'newest') {
-                filtered.sort((a, b) => {
-                    if (a.createdAt && b.createdAt) {
-                        return b.createdAt.seconds - a.createdAt.seconds;
-                    }
+                temp.sort((a, b) => {
+                    if (a.createdAt && b.createdAt) return b.createdAt.seconds - a.createdAt.seconds;
                     return 0;
                 });
-            }
-            renderCards(filtered);
+                servers = temp;
+                servers.forEach(s => { if (!s.statusData) updateServerStatus(s); });
+                await autoDeleteOfflineServers();
+                applyFiltersAndRender();
+            }, (error) => {
+                serversContainer.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--text-muted);"><i class="fas fa-exclamation-triangle" style="font-size:32px;display:block;margin-bottom:12px;"></i>Ошибка: ' + error.message + '</div>';
+            });
         }
-
-        function renderCards(serversList) {
-            if (!serversList || serversList.length === 0) {
-                serversGrid.innerHTML = `<div class="no-results"><i class="fas fa-server"></i> Нет серверов</div>`;
+        
+        function applyFiltersAndRender() {
+            const search = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
+            let filtered = servers.filter(s => {
+                const nameMatch = s.name && s.name.toLowerCase().includes(search);
+                const versionMatch = activeVersionFilter === 'all' || (s.version && s.version === activeVersionFilter);
+                return nameMatch && versionMatch;
+            });
+            const total = filtered.length;
+            const totalPages = Math.ceil(total / PER_PAGE) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+            const start = (currentPage - 1) * PER_PAGE;
+            const end = start + PER_PAGE;
+            const pageItems = filtered.slice(start, end);
+            renderCards(pageItems);
+            renderPagination(totalPages);
+        }
+        
+        // ============================================================
+        // 5. БЕЗОПАСНАЯ ОТРИСОВКА КАРТОЧЕК (С ЭКРАНИРОВАНИЕМ)
+        // ============================================================
+        
+        function renderCards(items) {
+            if (!items || items.length === 0) {
+                serversContainer.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--text-muted);">' +
+                    '<i class="fas fa-server" style="font-size:32px;display:block;margin-bottom:12px;"></i>' +
+                    'Нет серверов</div>';
                 return;
             }
+            
             let html = '';
-            serversList.forEach(server => {
+            items.forEach(server => {
+                // Экранируем все пользовательские данные
+                const safeId = escapeHtml(server.id);
+                const safeName = escapeHtml(server.name || server.address);
+                const safeAddress = escapeHtml(server.address);
+                const safePort = escapeHtml(String(server.port || 25565));
+                const safeDescription = escapeHtml(server.description || '');
+                const safeTags = (server.tags || []).map(t => escapeHtml(t));
+                const safeVersion = escapeHtml((server.statusData && server.statusData.version) || server.version || '—');
+                
                 const status = server.statusData;
                 const online = status && status.online === true;
-                const playersOnline = status && status.players ? status.players.online : 0;
-                const playersMax = status && status.players ? status.players.max : 0;
-                const percent = playersMax > 0 ? Math.round((playersOnline / playersMax) * 100) : 0;
-                const versionDisplay = status && status.version ? status.version : (server.version || '—');
-                const description = server.description || 'Описание отсутствует';
-                const tags = server.tags || [];
-                const avatar = server.avatarUrl || '';
-                const votes = server.votes || 0;
+                const playersOnline = online && status.players ? status.players.online : 0;
+                const playersMax = online && status.players ? status.players.max : 0;
+                
+                let iconHtml = '<i class="fas fa-server"></i>';
+                if (server.avatarUrl) {
+                    const avatarUrl = server.avatarUrl.startsWith('data:image') ? server.avatarUrl : '';
+                    if (avatarUrl) {
+                        iconHtml = `<img src="${escapeHtml(avatarUrl)}" alt="avatar" />`;
+                    }
+                } else if (status && status.icon) {
+                    let src = status.icon;
+                    if (!src.startsWith('data:image')) src = 'data:image/png;base64,' + src;
+                    iconHtml = `<img src="${escapeHtml(src)}" alt="icon" />`;
+                }
+                
+                const timeText = online ? timeAgo(server.createdAt) : timeAgo(server.statusUpdatedAt);
+                const timeLabel = online ? 'Открылся' : 'Закрылся';
                 const statusText = online ? 'Онлайн' : 'Офлайн';
-                const statusDotClass = online ? 'status-dot' : 'status-dot offline';
-                html += `
-                    <div class="server-card" data-id="${server.id}">
-                        <div class="card-top">
-                            <div class="vote-block">
-                                <span class="vote-arrow"><i class="fas fa-chevron-up"></i></span>
-                                <span class="vote-count">${votes}</span>
-                            </div>
-                            <div class="server-avatar">
-                                ${avatar ? `<img src="${avatar}" alt="avatar" />` : '🎮'}
-                            </div>
-                            <div class="server-title">
-                                <h3>${server.name || server.address}</h3>
-                                <div class="server-tags">
-                                    ${tags.map(t => `<span>${t}</span>`).join('')}
-                                    ${versionDisplay !== '—' ? `<span>${versionDisplay}</span>` : ''}
+                const dotClass = online ? '' : 'offline';
+                
+                const currentDir = getVoteDirection(server.id);
+                const upActive = currentDir === 1 ? 'vote-arrow-active' : 'vote-arrow';
+                const downActive = currentDir === -1 ? 'vote-arrow-active' : 'vote-arrow';
+                
+                const onlineIconSvg = '<svg class="online-icon-svg ' + (online ? '' : 'offline') + '" viewBox="0 0 24 24">' +
+                    '<circle class="head" cx="12" cy="8" r="4" />' +
+                    '<path class="body" d="M20 21c0-4-4-6-8-6s-8 2-8 6" />' +
+                    '<path class="body" d="M4 21c0-4 4-6 8-6s8 2 8 6" stroke-width="1.8" /></svg>';
+                
+                const progressClass = online ? '' : 'offline';
+                
+                html += `<div class="server-row" data-id="${safeId}">
+                    <div class="server-left-side">
+                        <div class="server-top-row">
+                            <div class="server-icon">${iconHtml}</div>
+                            <div class="server-main-info">
+                                <div class="server-title-line">
+                                    <div class="flag-ru"></div>
+                                    <a class="server-title" onclick="openStats('${safeId}')">${safeName}</a>
+                                    <span class="server-status-dot ${dotClass}"></span>
+                                    <span style="font-size:11px;color:var(--text-muted);">${escapeHtml(statusText)}</span>
+                                </div>
+                                <div class="server-meta-line">
+                                    <span>IP: <strong class="meta-ip" onclick="copyToClipboard('${safeAddress}:${safePort}')">${safeAddress}:${safePort}</strong></span>
+                                    <span>версия: <span class="meta-highlight">${safeVersion}</span></span>
+                                    <span class="meta-time">${escapeHtml(timeLabel)} ${escapeHtml(timeText)}</span>
                                 </div>
                             </div>
                         </div>
-                        <div class="card-desc">${description}</div>
-                        <div class="online-bar-wrap">
-                            <div class="online-bar-fill" style="width: ${percent}%;"></div>
-                        </div>
-                        <div class="online-info">
-                            <span><strong>${playersOnline}</strong> / ${playersMax} игроков</span>
-                            <span>${percent}%</span>
-                        </div>
-                        <div class="card-actions">
-                            <div class="ip-copy" onclick="copyToClipboard('${server.address}:${server.port}')">
-                                <i class="fas fa-copy"></i> ${server.address}:${server.port}
-                            </div>
-                            <div class="server-status">
-                                <span class="${statusDotClass}"></span> ${statusText}
-                            </div>
-                        </div>
-                        <button class="btn btn-danger btn-sm delete-btn" onclick="deleteServer('${server.id}')">
-                            <i class="fas fa-trash"></i> Удалить
-                        </button>
+                        ${safeDescription ? `<div class="server-description">${safeDescription}</div>` : ''}
+                        ${safeTags.length ? `<div class="server-tags-line">${safeTags.map(t => `<span>${t}</span>`).join('')}</div>` : ''}
                     </div>
-                `;
+                    <div class="server-actions">
+                        <div class="vote-block">
+                            <span class="${upActive}" onclick="voteServer('${safeId}',1)">
+                                <i class="fas fa-chevron-up"></i>
+                            </span>
+                            <span class="vote-count">${server.votes || 0}</span>
+                            <span class="${downActive}" onclick="voteServer('${safeId}',-1)">
+                                <i class="fas fa-chevron-down"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="online-wrapper">
+                        ${onlineIconSvg}
+                        <div class="online-progress-bar ${progressClass}">
+                            ${online ? `${playersOnline} из ${playersMax}` : 'Офлайн'}
+                        </div>
+                    </div>
+                </div>`;
             });
-            serversGrid.innerHTML = html;
+            
+            serversContainer.innerHTML = html;
         }
-
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                console.log('Скопировано:', text);
-            }).catch(err => console.error('Ошибка копирования:', err));
+        
+        function renderPagination(totalPages) {
+            if (totalPages <= 1) { paginationEl.innerHTML = ''; return; }
+            let html = '';
+            for (let i = 1; i <= totalPages; i++) {
+                const active = i === currentPage ? 'active' : '';
+                html += '<a class="page-link ' + active + '" data-page="' + i + '">' + i + '</a>';
+            }
+            paginationEl.innerHTML = html;
+            paginationEl.querySelectorAll('.page-link').forEach(el => {
+                el.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    currentPage = parseInt(this.dataset.page);
+                    applyFiltersAndRender();
+                });
+            });
         }
-
-        async function deleteServer(id) {
-            if (!confirm('Удалить этот сервер?')) return;
+        
+        function openStats(id) {
+            currentStatsServerId = id;
+            showPage('stats');
+        }
+        
+        // ============================================================
+        // 6. СТАТИСТИКА И ГРАФИК
+        // ============================================================
+        
+        function loadServerStats(id) {
+            if (statsUnsubscribe) {
+                statsUnsubscribe();
+                statsUnsubscribe = null;
+            }
+            
+            statsUnsubscribe = db.collection('servers').doc(id).onSnapshot((doc) => {
+                if (!doc.exists) return;
+                const data = doc.data();
+                
+                document.getElementById('statsServerName').textContent = data.name || data.address || 'Без названия';
+                document.getElementById('statsServerAddr').textContent = 'IP: ' + data.address + ':' + (data.port || 25565);
+                document.getElementById('statsVersion').textContent = data.version || '—';
+                document.getElementById('statsVotes').textContent = data.votes || 0;
+                
+                const status = data.statusData || null;
+                const online = status && status.online === true;
+                document.getElementById('statsOnline').textContent = online ? (status.players ? status.players.online : 0) : 0;
+                document.getElementById('statsMax').textContent = online ? (status.players ? status.players.max : 0) : 0;
+                document.getElementById('statsDescription').textContent = data.description || '—';
+                document.getElementById('statsTags').textContent = (data.tags || []).join(', ') || '—';
+                
+                drawChart(data.history || {});
+            });
+        }
+        
+        function drawChart(history) {
+            const canvas = document.getElementById('statsChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.parentElement.clientWidth || 800;
+            canvas.height = 200;
+            const w = canvas.width;
+            const h = canvas.height;
+            const p = { top: 20, right: 20, bottom: 30, left: 30 };
+            const cw = w - p.left - p.right;
+            const ch = h - p.top - p.bottom;
+            
+            ctx.clearRect(0, 0, w, h);
+            
+            const now = new Date();
+            const hours = [];
+            const values = [];
+            for (let i = 23; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours() - i);
+                const key = d.toISOString();
+                hours.push(d);
+                values.push(history[key] !== undefined ? history[key] : null);
+            }
+            
+            if (values.every(v => v === null)) {
+                ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--text-muted').trim() || '#888';
+                ctx.font = '14px Tahoma';
+                ctx.textAlign = 'center';
+                ctx.fillText('Нет данных за последние 24 часа', w / 2, h / 2);
+                return;
+            }
+            
+            const data = values.map(v => v !== null ? v : 0);
+            const max = Math.max(...data, 1);
+            const scaleY = (val) => p.top + ch - (val / max) * ch;
+            
+            ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--chart-grid').trim() || '#ddd';
+            ctx.lineWidth = .5;
+            for (let i = 0; i <= 4; i++) {
+                const y = p.top + (i / 4) * ch;
+                ctx.beginPath();
+                ctx.moveTo(p.left, y);
+                ctx.lineTo(w - p.right, y);
+                ctx.stroke();
+                const val = Math.round(max - (i / 4) * max);
+                ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--text-muted').trim() || '#888';
+                ctx.font = '10px Tahoma';
+                ctx.textAlign = 'right';
+                ctx.fillText(val, p.left - 5, y + 3);
+            }
+            
+            ctx.beginPath();
+            ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--chart-line').trim() || '#28a745';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < data.length; i++) {
+                const x = p.left + (i / (data.length - 1)) * cw;
+                const y = scaleY(data[i]);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            
+            const lastX = p.left + cw;
+            ctx.lineTo(lastX, p.top + ch);
+            ctx.lineTo(p.left, p.top + ch);
+            ctx.closePath();
+            ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--chart-fill').trim() || 'rgba(40,167,69,0.2)';
+            ctx.fill();
+            
+            ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--text-muted').trim() || '#888';
+            ctx.font = '10px Tahoma';
+            ctx.textAlign = 'center';
+            for (let i = 0; i < hours.length; i += 4) {
+                const x = p.left + (i / (data.length - 1)) * cw;
+                const label = hours[i].getHours() + ':00';
+                ctx.fillText(label, x, h - 5);
+            }
+        }
+        
+        // ============================================================
+        // 7. ГОЛОСОВАНИЕ
+        // ============================================================
+        
+        async function voteServer(id, delta) {
+            if (!currentUser) {
+                alert('⚠️ Для голосования необходимо войти в аккаунт!');
+                showPage('login');
+                return;
+            }
+            if (!await isUserVerified(currentUser.uid)) {
+                alert('⚠️ Ваш email не подтверждён. Проверьте почту и подтвердите аккаунт.');
+                showVerifyPage(currentUser.email, currentUser.uid);
+                return;
+            }
+            if (votingCooldown) return;
+            votingCooldown = true;
+            setTimeout(() => { votingCooldown = false; }, 500);
+            
+            const server = servers.find(s => s.id === id);
+            if (!server) return;
+            
+            const currentDir = getVoteDirection(id);
+            let newDir = 0;
+            if (currentDir === delta) newDir = 0;
+            else if (currentDir === -delta) newDir = delta;
+            else newDir = delta;
+            
+            const change = newDir - currentDir;
+            if (change === 0) return;
+            
+            const newVotes = (server.votes || 0) + change;
             try {
-                await db.collection('servers').doc(id).delete();
-                console.log('🗑️ Сервер удалён');
-            } catch (e) {
-                console.error('❌ Ошибка удаления:', e);
-                alert('Не удалось удалить сервер');
-            }
-        }
-
-        async function updateAllStatuses() {
-            for (const server of servers) {
-                await updateServerStatus(server);
-            }
-        }
-
-        // ============================================================
-        //  ИНИЦИАЛИЗАЦИЯ
-        // ============================================================
-        function init() {
-            loadServers();
-            searchInput.addEventListener('input', applyFiltersAndRender);
-            versionFilterSelect.addEventListener('change', applyFiltersAndRender);
-            sortFilterSelect.addEventListener('change', applyFiltersAndRender);
-            resetFiltersBtn.addEventListener('click', function() {
-                searchInput.value = '';
-                versionFilterSelect.value = 'all';
-                sortFilterSelect.value = 'online';
+                await db.collection('servers').doc(id).update({ votes: newVotes });
+                server.votes = newVotes;
+                setVoteDirection(id, newDir);
                 applyFiltersAndRender();
-            });
-            document.querySelector('.hero h1').addEventListener('dblclick', function() {
-                if (confirm('Обновить статусы всех серверов?')) {
-                    updateAllStatuses();
+            } catch (e) {
+                alert('Не удалось проголосовать: ' + e.message);
+            }
+        }
+        
+        // ============================================================
+        // 8. ЗАЩИТА ОТ ВЗЛОМА (ДОПОЛНИТЕЛЬНАЯ)
+        // ============================================================
+        
+        // Блокировка консоли
+        setInterval(() => console.clear(), 3000);
+        
+        // Блокировка F12 и других клавиш разработчика
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F12' || 
+                (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) ||
+                (e.ctrlKey && e.key === 'U')) {
+                e.preventDefault();
+                alert('🔒 Доступ запрещен');
+                return false;
+            }
+        });
+        
+        // Блокировка правой кнопки мыши
+        document.addEventListener('contextmenu', function(e) {
+            if (!e.target.closest('input') && !e.target.closest('textarea')) {
+                e.preventDefault();
+            }
+        });
+        
+        // Блокировка копирования
+        document.addEventListener('copy', function(e) {
+            if (!e.target.closest('input') && !e.target.closest('textarea')) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // Блокировка перетаскивания изображений
+        document.addEventListener('dragstart', function(e) {
+            if (e.target.tagName === 'IMG') {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        console.log('%c🔒 KreZzMonitor защищен!', 'font-size: 20px; color: #00ff00;');
+        console.log('%c⚠️ Все попытки взлома логируются', 'font-size: 14px; color: #ff6600;');
+        
+        // ============================================================
+        // 9. ИНИЦИАЛИЗАЦИЯ
+        // ============================================================
+        
+        function init() {
+            loadVotedServers();
+            loadServers();
+            generateVersionTags();
+            renderTags();
+            
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    currentPage = 1;
+                    applyFiltersAndRender();
+                });
+            }
+            
+            serverVersionSelect.addEventListener('change', function() {
+                if (this.value === 'custom') {
+                    serverVersionCustom.style.display = 'block';
+                    serverVersionCustom.required = true;
+                } else {
+                    serverVersionCustom.style.display = 'none';
+                    serverVersionCustom.required = false;
+                    serverVersionCustom.value = '';
                 }
             });
+            
+            // Автообновление статусов каждые 5 минут
+            setInterval(async () => {
+                await autoDeleteOfflineServers();
+                for (const s of servers) await updateServerStatus(s);
+            }, 5 * 60 * 1000);
+            
+            // Обновление графика при изменении размера окна
+            window.addEventListener('resize', () => {
+                if (document.getElementById('page-stats').classList.contains('active') && currentStatsServerId) {
+                    loadServerStats(currentStatsServerId);
+                }
+            });
+            
+            // Enter для форм
+            document.getElementById('loginPassword')?.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') document.getElementById('loginBtn').click();
+            });
+            document.getElementById('loginEmail')?.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') document.getElementById('loginBtn').click();
+            });
+            document.getElementById('registerPasswordConfirm')?.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') document.getElementById('registerBtn').click();
+            });
+            document.getElementById('verifyCode')?.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') document.getElementById('verifyBtn').click();
+            });
         }
-
+        
+        // ============================================================
+        // ЗАПУСК
+        // ============================================================
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', init);
         } else {
